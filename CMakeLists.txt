@@ -16,9 +16,9 @@ set(TS_FILES LogZ_en_HR.ts)
 
 set(PROJECT_SOURCES
         main.cpp
-        mainwindow.cpp
-        mainwindow.h
-        mainwindow.ui
+        View/src/mainwindow.cpp
+        View/inc/mainwindow.h
+        View/src/mainwindow.ui # Ovdje ažurirajte putanju
         ${TS_FILES}
 )
 
@@ -48,6 +48,8 @@ else()
 
     qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 endif()
+
+target_include_directories(LogZ PRIVATE View/inc)
 
 target_link_libraries(LogZ PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 
