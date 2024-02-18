@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QStandardItemModel>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -19,8 +20,12 @@ public:
 
 private:
     Ui::MainWindow *ui;
+    QStandardItemModel *model; //Za pohranu naziva učitanih datoteka
+
 private slots:
     void on_actionOpen_triggered();
+    void onTreeViewClicked(const QModelIndex &index);
+
 
 };
 #endif // MAINWINDOW_H
