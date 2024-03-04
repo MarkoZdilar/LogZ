@@ -18,7 +18,9 @@ set(PROJECT_SOURCES
         main.cpp
         View/src/mainwindow.cpp
         View/inc/mainwindow.h
-        View/src/mainwindow.ui # Ovdje ažurirajte putanju
+        View/src/mainwindow.ui
+        View/inc/fileitemdelegate.h
+        View/src/fileitemdelegate.cpp
         ${TS_FILES}
 )
 
