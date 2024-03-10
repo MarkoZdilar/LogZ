@@ -59,7 +59,7 @@
           <property name="orientation">
            <enum>Qt::Vertical</enum>
           </property>
-          <widget class="QTextEdit" name="textEditPrimary">
+          <widget class="ClickableTextEdit" name="textEditPrimary">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
              <horstretch>0</horstretch>
@@ -95,7 +95,7 @@
      <x>0</x>
      <y>0</y>
      <width>798</width>
-     <height>22</height>
+     <height>24</height>
     </rect>
    </property>
   </widget>
@@ -121,6 +121,13 @@
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ClickableTextEdit</class>
+   <extends>QTextEdit</extends>
+   <header>clickabletextedit.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

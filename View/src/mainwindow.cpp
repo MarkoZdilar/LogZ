@@ -7,6 +7,7 @@
 #include <QTextStream>
 #include <QInputDialog>
 #include <QMessageBox>
+#include <QFontDialog>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
@@ -17,6 +18,18 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     model = new QStandardItemModel(this);
     ui->treeView->setModel(model);
 
+    //Font setting
+    QFont monospaceFont("Courier New", 14);
+    ui->textEditPrimary->setFont(monospaceFont);
+    ui->textEditSecondary->setFont(monospaceFont);
+
+    //menuBar - changing toolBar with this (cannot find this in QtDesigner
+    QMenuBar *menuBar = new QMenuBar(this);
+    QMenu *viewMenu = menuBar->addMenu(tr("&View"));
+
+    QAction *changeFontSizeAction = new QAction(tr("&Change Font Size"), this);
+    viewMenu->addAction(changeFontSizeAction);
+
     // This delegate allows custom drawing and interaction within the tree view (Drawing of te "X" button).
     auto delegate = new FileItemDelegate(ui->treeView);
     ui->treeView->setItemDelegate(delegate);
@@ -25,6 +38,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     connect(ui->treeView, &QTreeView::clicked, this, &MainWindow::onTreeViewClicked);
     connect(delegate, &FileItemDelegate::closeFileRequested, this, &MainWindow::onCloseFileRequested);
     connect(delegate, &FileItemDelegate::closeGroupRequested, this, &MainWindow::onCloseGroupRequested);
+    connect(ui->textEditPrimary, &ClickableTextEdit::ctrlClicked, this, &MainWindow::onTextEditPrimaryCtrlClicked);
+    connect(changeFontSizeAction, &QAction::triggered, this, &MainWindow::onChangeFontSizeTriggered);
+
+    setMenuBar(menuBar);
 }
 
 MainWindow::~MainWindow() {
@@ -145,5 +162,18 @@ void MainWindow::onCloseGroupRequested(const QModelIndex &groupIndex) {
 
     if (model->rowCount() == 0) {
         ui->textEditPrimary->clear(); // Clear text view if there are no more items left in the whole model
+    }
+}
+
+void MainWindow::onTextEditPrimaryCtrlClicked(const QString &lineText) {
+    ui->textEditSecondary->append(lineText); // Append - to the bottom of textEditSecondary
+}
+
+void MainWindow::onChangeFontSizeTriggered() {
+    bool ok;
+    QFont font = QFontDialog::getFont(&ok, this);
+    if (ok) {
+        ui->textEditPrimary->setFont(font);
+        ui->textEditSecondary->setFont(font);
     }
 }

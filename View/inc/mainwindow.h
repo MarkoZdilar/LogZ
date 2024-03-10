@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QStandardItemModel>
+#include "clickabletextedit.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -52,6 +53,17 @@ private slots:
      * @param groupIndex The model index of the group to close.
      */
     void onCloseGroupRequested(const QModelIndex &index);
+
+    /**
+     * @brief Handles the Ctrl+click action on a line of text in the primary text edit widget.
+     *
+     * This slot is triggered when the user Ctrl+clicks on a line of text in the primary text edit.
+     * It appends the clicked line of text to the secondary text edit widget.
+     * @param lineText The text of the clicked line to be added to the secondary text edit.
+     */
+    void onTextEditPrimaryCtrlClicked(const QString &lineText);
+
+    void onChangeFontSizeTriggered();
 
 private:
     Ui::MainWindow *ui; ///< Pointer to the UI elements.

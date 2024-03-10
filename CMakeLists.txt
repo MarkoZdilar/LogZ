@@ -21,6 +21,8 @@ set(PROJECT_SOURCES
         View/src/mainwindow.ui
         View/inc/fileitemdelegate.h
         View/src/fileitemdelegate.cpp
+        View/inc/clickabletextedit.h
+        View/src/clickabletextedit.cpp
         ${TS_FILES}
 )
 
