@@ -63,6 +63,10 @@ private slots:
      */
     void onTextEditPrimaryCtrlClicked(const QString &lineText);
 
+    /**
+     * @brief Slot triggered to change the font size of the text edits and tree view.
+     *        Presents a font dialog to the user and applies the chosen font.
+     */
     void onChangeFontSizeTriggered();
 
 private:
@@ -94,17 +98,24 @@ private:
     void addToGroup(const QString &groupName, const QString &fileName, const QString &filePath);
 
     /**
-     * @brief Updates the text view after an item is closed.
-     * @param closedIndex Model index of the closed item.
+     * @brief Initializes the tree view with proper width and model.
      */
-    void updateTextViewAfterClose(const QModelIndex &closedIndex);
+    void initializeTreeView();
 
     /**
-     * @brief Finds the next valid index for selection after an item is closed.
-     * @param closedIndex Model index of the closed item.
-     * @return Model index of the next valid item.
+     * @brief Initializes the fonts for textEdit widgets with monospace font.
      */
-    QModelIndex findNextValidIndex(const QModelIndex &closedIndex);
+    void initializeFonts();
+
+    /**
+     * @brief Sets up the menu bar with File and View menus and associated actions.
+     */
+    void setupMenuBar();
+
+    /**
+     * @brief Sets up delegates for custom drawing in the tree view and connects signals to slots.
+     */
+    void setupDelegatesAndConnections();
 };
 
 #endif // MAINWINDOW_H

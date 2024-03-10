@@ -9,43 +9,62 @@
 #include <QMessageBox>
 #include <QFontDialog>
 
+// Constructor initialization
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
     ui->setupUi(this);
+    initializeTreeView();
+    initializeFonts();
+    setupMenuBar();
+    setupDelegatesAndConnections();
+}
 
-    int percentWidth = 40; //40% max tree view width
+// Destructor
+MainWindow::~MainWindow() {
+    delete ui;
+}
+
+// Initialize the tree view with proper width
+void MainWindow::initializeTreeView() {
+    int percentWidth = 40;
     int treeWidth = this->width() * percentWidth / 100;
     ui->treeView->setMaximumWidth(treeWidth);
     model = new QStandardItemModel(this);
     ui->treeView->setModel(model);
+}
 
-    //Font setting
+// Initialize font settings for text edits
+void MainWindow::initializeFonts() {
     QFont monospaceFont("Courier New", 14);
     ui->textEditPrimary->setFont(monospaceFont);
     ui->textEditSecondary->setFont(monospaceFont);
+}
 
-    //menuBar - changing toolBar with this (cannot find this in QtDesigner
+// Setup menu bar and actions
+void MainWindow::setupMenuBar() {
     QMenuBar *menuBar = new QMenuBar(this);
-    QMenu *viewMenu = menuBar->addMenu(tr("&View"));
+    QMenu *fileMenu = menuBar->addMenu(tr("&File"));
+    QAction *openAction = new QAction(tr("&Open"), this);
+    fileMenu->addAction(openAction);
 
+    QMenu *viewMenu = menuBar->addMenu(tr("&View"));
     QAction *changeFontSizeAction = new QAction(tr("&Change Font Size"), this);
     viewMenu->addAction(changeFontSizeAction);
 
-    // This delegate allows custom drawing and interaction within the tree view (Drawing of te "X" button).
-    auto delegate = new FileItemDelegate(ui->treeView);
-    ui->treeView->setItemDelegate(delegate);
-
-    // Connecting signals to slots
-    connect(ui->treeView, &QTreeView::clicked, this, &MainWindow::onTreeViewClicked);
-    connect(delegate, &FileItemDelegate::closeFileRequested, this, &MainWindow::onCloseFileRequested);
-    connect(delegate, &FileItemDelegate::closeGroupRequested, this, &MainWindow::onCloseGroupRequested);
-    connect(ui->textEditPrimary, &ClickableTextEdit::ctrlClicked, this, &MainWindow::onTextEditPrimaryCtrlClicked);
+    connect(openAction, &QAction::triggered, this, &MainWindow::on_actionOpen_triggered);
     connect(changeFontSizeAction, &QAction::triggered, this, &MainWindow::onChangeFontSizeTriggered);
 
     setMenuBar(menuBar);
 }
 
-MainWindow::~MainWindow() {
-    delete ui;
+// Setup delegates for custom drawing and connections for signals and slots
+void MainWindow::setupDelegatesAndConnections() {
+    auto delegate = new FileItemDelegate(ui->treeView);
+    ui->treeView->setItemDelegate(delegate);
+
+    connect(ui->treeView, &QTreeView::clicked, this, &MainWindow::onTreeViewClicked);
+    connect(delegate, &FileItemDelegate::closeFileRequested, this, &MainWindow::onCloseFileRequested);
+    connect(delegate, &FileItemDelegate::closeGroupRequested, this, &MainWindow::onCloseGroupRequested);
+    connect(ui->textEditPrimary, &ClickableTextEdit::ctrlClicked, this, &MainWindow::onTextEditPrimaryCtrlClicked);
 }
 
 void MainWindow::on_actionOpen_triggered() {
