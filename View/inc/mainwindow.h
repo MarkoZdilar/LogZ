@@ -4,10 +4,25 @@
 #include <QMainWindow>
 #include <QStandardItemModel>
 #include "clickabletextedit.h"
+#include <QDateTime>
+#include <QList>
+#include <QTextLayout>
+#include <QTextDocument>
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
+
+struct LogEntry {
+    QDateTime dateTime;
+    QString text;
+    QList<QTextLayout::FormatRange> formats;
+
+    // Constructor
+    LogEntry(QDateTime dt, const QString& txt, QList<QTextLayout::FormatRange> fmts)
+        : dateTime(dt), text(txt), formats(fmts) {}
+};
 
 /**
  * @brief The MainWindow class provides the main application window and manages user interactions.
@@ -69,10 +84,62 @@ private slots:
      */
     void onChangeFontSizeTriggered();
 
+    /**
+     * @brief Changes the color of the selected text in textEditSecondary.
+     */
+    void changeTextColorInSecondary();
+
+    /**
+     * @brief Highlights the selected text in textEditSecondary.
+     */
+    void highlightTextInSecondary();
+
+    /**
+     * @brief Opens a previously saved editable log for further editing.
+     */
+    void on_openEditableLog_triggered();
+
+    /**
+     * @brief Saves the current state of the content in textEditSecondary to a file.
+     */
+    void on_save_triggered();
+
+    /**
+     * @brief Confirms the action to sort logs in ascending order.
+     *
+     * This method is a slot that gets triggered when the user selects
+     * the option to sort logs in ascending order. It calls `sortLogs` with
+     * the ascending parameter set to true. This method is typically connected
+     * to a signal from a menu action or button click.
+     */
+    void sortAscendingConfirmed();
+
+    /**
+     * @brief Confirms the action to sort logs in descending order.
+     *
+     * This method is a slot that gets triggered when the user selects
+     * the option to sort logs in descending order. It calls `sortLogs` with
+     * the ascending parameter set to false. This method is typically connected
+     * to a signal from a menu action or button click.
+     */
+    void sortDescendingConfirmed();
+
+    /**
+     * @brief Reverts the text in the secondary text edit widget to its state before sorting.
+     *
+     * This method restores the HTML content of the secondary text edit widget to
+     * its previous state, before the last sorting operation was performed. This allows
+     * the user to undo the sorting action and recover any formatting or highlighting
+     * that was applied to the text. This method is typically connected to a signal
+     * from an undo action in a menu.
+     */
+    void undoChanges();
+
 private:
     Ui::MainWindow *ui; ///< Pointer to the UI elements.
     QStandardItemModel *model; ///< Model for managing tree view items.
     QString currentOpenFilePath; ///< Path of the currently open file.
+    QList<LogEntry> logEntries;
 
     /**
      * @brief Opens and displays the content of the specified file.
@@ -116,6 +183,49 @@ private:
      * @brief Sets up delegates for custom drawing in the tree view and connects signals to slots.
      */
     void setupDelegatesAndConnections();
+
+    /**
+     * @brief Sets up text formatting actions for textEditSecondary.
+     *
+     * This function adds actions for changing text color and highlighting text
+     * to the context menu of textEditSecondary, enabling the user to modify
+     * the appearance of selected text.
+     */
+    void setupTextFormattingActions();
+
+    /**
+     * @brief Sorts the logs in the secondary text edit widget.
+     *
+     * Sorts the logs displayed in the secondary text edit widget either in ascending
+     * or descending order based on their timestamps. This sorting does not
+     * take into account any formatting or highlighting previously applied to the text.
+     *
+     * @param ascending If true, logs are sorted in ascending order; if false, in descending order.
+     */
+    void sortLogs(bool ascending);
+
+    /**
+     * @brief Prompts the user for confirmation before sorting logs.
+     *
+     * Displays a confirmation dialog asking the user if they want to proceed with
+     * sorting the logs. This is because sorting will remove all formatting and
+     * highlighting from the text. If the user confirms, `sortLogs` is called
+     * with the specified sorting order.
+     *
+     * @param ascending Specifies the sorting order. True for ascending, false for descending.
+     */
+    void promptForSortConfirmation(bool ascending);
+
+    /**
+     * @brief Holds the HTML content of the secondary text edit widget before any sort operation.
+     *
+     * This member stores the entire HTML content of the secondary text edit widget
+     * right before a sort operation is performed. This allows for the content
+     * to be restored if the user decides to undo the sort operation, preserving
+     * all formatting and highlighting that was previously applied.
+     */
+    QString previousContent;
+
 };
 
 #endif // MAINWINDOW_H

@@ -8,6 +8,13 @@
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QFontDialog>
+#include <QColorDialog>
+#include <QTextCursor>
+#include <QTextDocument>
+#include <QTextBlock>
+#include <QTextCharFormat>
+#include <utility>
+#include <algorithm>
 
 // Constructor initialization
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
@@ -16,6 +23,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     initializeFonts();
     setupMenuBar();
     setupDelegatesAndConnections();
+    setupTextFormattingActions();
 }
 
 // Destructor
@@ -42,19 +50,46 @@ void MainWindow::initializeFonts() {
 // Setup menu bar and actions
 void MainWindow::setupMenuBar() {
     QMenuBar *menuBar = new QMenuBar(this);
-    QMenu *fileMenu = menuBar->addMenu(tr("&File"));
-    QAction *openAction = new QAction(tr("&Open"), this);
-    fileMenu->addAction(openAction);
 
+    // File Menu
+    QMenu *fileMenu = menuBar->addMenu(tr("&File"));
+
+    QAction *openLogsAction = new QAction(tr("&Open Logs"), this);
+    fileMenu->addAction(openLogsAction);
+    connect(openLogsAction, &QAction::triggered, this, &MainWindow::on_actionOpen_triggered);
+
+    QAction *openEditableLogAction = new QAction(tr("Open &Editable Log"), this);
+    fileMenu->addAction(openEditableLogAction);
+    connect(openEditableLogAction, &QAction::triggered, this, &MainWindow::on_openEditableLog_triggered);
+
+    QAction *saveAction = new QAction(tr("&Save"), this);
+    saveAction->setShortcut(QKeySequence::Save);
+    fileMenu->addAction(saveAction);
+    connect(saveAction, &QAction::triggered, this, &MainWindow::on_save_triggered);
+
+    QAction *undoAction = fileMenu->addAction(tr("&Undo"));
+    connect(undoAction, &QAction::triggered, this, &MainWindow::undoChanges);
+
+    // View Menu
     QMenu *viewMenu = menuBar->addMenu(tr("&View"));
     QAction *changeFontSizeAction = new QAction(tr("&Change Font Size"), this);
     viewMenu->addAction(changeFontSizeAction);
-
-    connect(openAction, &QAction::triggered, this, &MainWindow::on_actionOpen_triggered);
     connect(changeFontSizeAction, &QAction::triggered, this, &MainWindow::onChangeFontSizeTriggered);
+
+    // Sort Menu
+    QMenu *sortMenu = menuBar->addMenu(tr("&Sort"));
+    QAction *sortAscendingAction = new QAction(tr("Sort Ascending"), this);
+    QAction *sortDescendingAction = new QAction(tr("Sort Descending"), this);
+
+    sortMenu->addAction(sortAscendingAction);
+    sortMenu->addAction(sortDescendingAction);
+
+    connect(sortAscendingAction, &QAction::triggered, [this]() { promptForSortConfirmation(true); });
+    connect(sortDescendingAction, &QAction::triggered, [this]() { promptForSortConfirmation(false); });
 
     setMenuBar(menuBar);
 }
+
 
 // Setup delegates for custom drawing and connections for signals and slots
 void MainWindow::setupDelegatesAndConnections() {
@@ -196,3 +231,107 @@ void MainWindow::onChangeFontSizeTriggered() {
         ui->textEditSecondary->setFont(font);
     }
 }
+
+void MainWindow::setupTextFormattingActions() {
+    QAction *changeColorAction = new QAction(tr("Change Text Color"), this);
+    QAction *highlightAction = new QAction(tr("Highlight Text"), this);
+
+    connect(changeColorAction, &QAction::triggered, this, &MainWindow::changeTextColorInSecondary);
+    connect(highlightAction, &QAction::triggered, this, &MainWindow::highlightTextInSecondary);
+
+    ui->textEditSecondary->addAction(changeColorAction);
+    ui->textEditSecondary->addAction(highlightAction);
+}
+
+void MainWindow::changeTextColorInSecondary() {
+    QColor color = QColorDialog::getColor(Qt::black, this, "Choose Text Color");
+    if (color.isValid()) {
+        QTextCursor cursor = ui->textEditSecondary->textCursor();
+        QTextCharFormat fmt;
+        fmt.setForeground(color);
+        cursor.mergeCharFormat(fmt);
+    }
+}
+
+void MainWindow::highlightTextInSecondary() {
+    QColor color = QColorDialog::getColor(Qt::yellow, this, "Choose Highlight Color");
+    if (color.isValid()) {
+        QTextCursor cursor = ui->textEditSecondary->textCursor();
+        QTextCharFormat fmt;
+        fmt.setBackground(color);
+        cursor.mergeCharFormat(fmt);
+    }
+}
+
+void MainWindow::on_openEditableLog_triggered() {
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Open HTML Log"), "", tr("HTML Files (*.html);;All Files (*)"));
+    if (!fileName.isEmpty()) {
+        QFile file(fileName);
+        if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            ui->textEditSecondary->setHtml(file.readAll());
+            file.close();
+        }
+    }
+}
+
+void MainWindow::on_save_triggered() {
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Save HTML Log"), "", tr("HTML Files (*.html);;All Files (*)"));
+    if (!fileName.isEmpty()) {
+        QFile file(fileName);
+        if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            QTextStream out(&file);
+            out << ui->textEditSecondary->toHtml();
+            file.close();
+        }
+    }
+}
+
+void MainWindow::sortAscendingConfirmed() {
+    sortLogs(true);
+}
+
+void MainWindow::sortDescendingConfirmed() {
+    sortLogs(false);
+}
+
+void MainWindow::promptForSortConfirmation(bool ascending) {
+    // Store everything from textEditSecondary for later Undo use.
+    previousContent = ui->textEditSecondary->toHtml();
+
+    auto reply = QMessageBox::question(this, tr("Sort Confirmation"),
+                                       tr("Sorting logs will remove all formatting. Do you wish to continue?"),
+                                       QMessageBox::Yes | QMessageBox::No);
+
+    if (reply == QMessageBox::Yes) {
+        sortLogs(ascending);
+    }
+}
+
+
+void MainWindow::sortLogs(bool ascending) {
+    QTextDocument *doc = ui->textEditSecondary->document();
+    QStringList lines;
+
+    // Extract each line
+    for (QTextBlock block = doc->begin(); block.isValid(); block = block.next()) {
+        lines.append(block.text());
+    }
+
+    // Sort by system time
+    std::sort(lines.begin(), lines.end(), [ascending](const QString &a, const QString &b) {
+        QDateTime timeA = QDateTime::fromString(a.left(21), "[yyyy-MM-dd HH:mm:ss]");
+        QDateTime timeB = QDateTime::fromString(b.left(21), "[yyyy-MM-dd HH:mm:ss]");
+        return ascending ? timeA < timeB : timeA > timeB;
+    });
+
+    // Show sorted logs
+    ui->textEditSecondary->clear();
+    for (const QString &line : lines) {
+        ui->textEditSecondary->append(line);
+    }
+}
+
+void MainWindow::undoChanges() {
+    ui->textEditSecondary->setHtml(previousContent);
+}
+

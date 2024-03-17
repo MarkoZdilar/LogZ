@@ -23,6 +23,8 @@ set(PROJECT_SOURCES
         View/src/fileitemdelegate.cpp
         View/inc/clickabletextedit.h
         View/src/clickabletextedit.cpp
+        View/inc/customtextedit.h
+        View/src/customtextedit.cpp
         ${TS_FILES}
 )
 

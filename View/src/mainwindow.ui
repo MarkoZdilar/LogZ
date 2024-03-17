@@ -73,7 +73,7 @@
             <bool>true</bool>
            </property>
           </widget>
-          <widget class="QTextEdit" name="textEditSecondary">
+          <widget class="CustomTextEdit" name="textEditSecondary">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
              <horstretch>0</horstretch>
@@ -123,6 +123,11 @@
    <class>ClickableTextEdit</class>
    <extends>QTextEdit</extends>
    <header>clickabletextedit.h</header>
+  </customwidget>
+  <customwidget>
+   <class>CustomTextEdit</class>
+   <extends>QTextEdit</extends>
+   <header>customtextedit.h</header>
   </customwidget>
  </customwidgets>
  <resources/>
