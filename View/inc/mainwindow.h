@@ -135,6 +135,19 @@ private slots:
      */
     void undoChanges();
 
+    /**
+     * @brief Deletes the line of text where the Ctrl+click event was triggered in the secondary text edit widget.
+     *
+     * This method removes a specific line of text in the secondary text edit widget, based on the position
+     * provided as an argument. The position corresponds to the character index in the text document where
+     * the Ctrl+click event occurred. This allows the user to directly delete lines of text by using a
+     * Ctrl+click shortcut, enhancing the editing capabilities of the application.
+     *
+     * @param position The character index in the text document of the secondary text edit widget, indicating
+     *                 where the Ctrl+click event was triggered.
+     */
+    void deleteSelectedLineInSecondary(int position);
+
 private:
     Ui::MainWindow *ui; ///< Pointer to the UI elements.
     QStandardItemModel *model; ///< Model for managing tree view items.
@@ -192,6 +205,16 @@ private:
      * the appearance of selected text.
      */
     void setupTextFormattingActions();
+
+    /**
+     * @brief Sets up signal-slot connections specific to the secondary text edit widget.
+     *
+     * This method establishes connections between the secondary text edit widget's signals
+     * and the corresponding slots within the MainWindow. It includes connecting the
+     * ctrlClickedForDeletion signal to handle the deletion of selected lines through
+     * a Ctrl+click interaction.
+     */
+    void setupSecondaryTextEditConnections();
 
     /**
      * @brief Sorts the logs in the secondary text edit widget.

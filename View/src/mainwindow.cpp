@@ -24,6 +24,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     setupMenuBar();
     setupDelegatesAndConnections();
     setupTextFormattingActions();
+    setupSecondaryTextEditConnections();
 }
 
 // Destructor
@@ -334,4 +335,21 @@ void MainWindow::sortLogs(bool ascending) {
 void MainWindow::undoChanges() {
     ui->textEditSecondary->setHtml(previousContent);
 }
+
+void MainWindow::setupSecondaryTextEditConnections() {
+    connect(ui->textEditSecondary, &CustomTextEdit::ctrlClickedForDeletion, this, &MainWindow::deleteSelectedLineInSecondary);
+}
+
+void MainWindow::deleteSelectedLineInSecondary(int position) {
+    QTextCursor cursor(ui->textEditSecondary->document());
+    cursor.setPosition(position);
+    cursor.select(QTextCursor::LineUnderCursor);
+    cursor.removeSelectedText();
+    if (!cursor.atEnd()) {
+        cursor.deleteChar(); // Removes newline char if it's not the last line
+    }
+}
+
+
+
 

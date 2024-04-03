@@ -1,5 +1,6 @@
 #include "customtextedit.h"
 #include <QContextMenuEvent>
+#include <QTextBlock>
 
 CustomTextEdit::CustomTextEdit(QWidget *parent) : QTextEdit(parent) {
 }
@@ -81,3 +82,14 @@ void CustomTextEdit::formatText(const QTextCharFormat &format, bool allOccurrenc
         cursor.mergeCharFormat(format);
     }
 }
+
+void CustomTextEdit::mousePressEvent(QMouseEvent *event) {
+    if ((event->modifiers() & Qt::ControlModifier) && event->button() == Qt::LeftButton) {
+        QTextCursor cursor = cursorForPosition(event->pos());
+        emit ctrlClickedForDeletion(cursor.position());
+    } else {
+        QTextEdit::mousePressEvent(event);
+    }
+}
+
+

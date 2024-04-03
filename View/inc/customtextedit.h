@@ -29,6 +29,9 @@ protected:
      */
     void contextMenuEvent(QContextMenuEvent *event) override;
 
+    void mousePressEvent(QMouseEvent *event) override;
+
+
 private slots:
     /**
      * @brief Applies a selected text color to the current selection.
@@ -81,6 +84,20 @@ private:
      * @param allOccurrences Whether to apply the format to all occurrences of the selected text.
      */
     void formatText(const QTextCharFormat &format, bool allOccurrences = false);
+
+signals:
+    /**
+     * @brief Signal emitted when a line of text is Ctrl+clicked in the CustomTextEdit widget.
+     *
+     * This signal is used to indicate that the user has performed a Ctrl+click action at a specific position
+     * within the text document of the CustomTextEdit widget. It is primarily used to trigger text manipulation
+     * actions, such as deleting the line of text at the position of the Ctrl+click. The position is passed as
+     * an argument to the slot connected to this signal, enabling direct access to the clicked line of text.
+     *
+     * @param position The character index in the text document where the Ctrl+click event was triggered.
+     */
+    void ctrlClickedForDeletion(int position);
+
 };
 
 #endif // CUSTOMTEXTEDIT_H
