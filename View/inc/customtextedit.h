@@ -29,8 +29,30 @@ protected:
      */
     void contextMenuEvent(QContextMenuEvent *event) override;
 
+    /**
+     * @brief Handles mouse press events, including custom actions for Ctrl+click.
+     *
+     * Overrides the default mouse press event to emit a signal when a Ctrl+click
+     * is detected. This signal is connected to custom slot function designed
+     * to handle specific actions, such as deleting the line where the click occurred.
+     * The function falls back to the standard QTextEdit mouse press event handling
+     * for all other types of clicks.
+     *
+     * @param event The mouse event information.
+     */
     void mousePressEvent(QMouseEvent *event) override;
 
+    /**
+     * @brief Handles key press events for custom text manipulation shortcuts.
+     *
+     * This method intercepts specific key press events to implement custom keyboard
+     * shortcuts for text manipulation, such as moving lines up or down within the document.
+     * It checks for combinations of the Alt key and arrow keys to trigger these actions,
+     * while other key events are passed on to the QTextEdit's default handler.
+     *
+     * @param event The key event information.
+     */
+    void keyPressEvent(QKeyEvent *event) override;
 
 private slots:
     /**
@@ -84,6 +106,26 @@ private:
      * @param allOccurrences Whether to apply the format to all occurrences of the selected text.
      */
     void formatText(const QTextCharFormat &format, bool allOccurrences = false);
+
+    /**
+     * @brief Moves the current line one position down in the document.
+     *
+     * This function shifts the line where the cursor currently resides one line down,
+     * effectively swapping positions with the line immediately below it. The function
+     * ensures that the cursor follows the moved line to maintain context for the user.
+     * If the cursor is on the last line of the document, no action is taken.
+     */
+    void moveLineDown();
+
+    /**
+     * @brief Moves the current line one position up in the document.
+     *
+     * This function shifts the line where the cursor currently resides one line up,
+     * effectively swapping positions with the line immediately above it. The function
+     * ensures that the cursor follows the moved line to maintain context for the user.
+     * If the cursor is on the first line of the document, no action is taken.
+     */
+    void moveLineUp();
 
 signals:
     /**

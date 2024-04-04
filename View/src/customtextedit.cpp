@@ -1,6 +1,7 @@
 #include "customtextedit.h"
 #include <QContextMenuEvent>
 #include <QTextBlock>
+#include <QKeyEvent>
 
 CustomTextEdit::CustomTextEdit(QWidget *parent) : QTextEdit(parent) {
 }
@@ -92,4 +93,95 @@ void CustomTextEdit::mousePressEvent(QMouseEvent *event) {
     }
 }
 
+void CustomTextEdit::keyPressEvent(QKeyEvent *event) {
+    if (event->modifiers() & Qt::AltModifier) {
+        switch (event->key()) {
+        case Qt::Key_Up:
+            moveLineUp();
+            break;
+        case Qt::Key_Down:
+            moveLineDown();
+            break;
+        default:
+            QTextEdit::keyPressEvent(event);
+        }
+    } else {
+        QTextEdit::keyPressEvent(event);
+    }
+}
+
+void CustomTextEdit::moveLineUp() {
+    QTextCursor cursor = textCursor();
+    cursor.beginEditBlock();
+
+    // Check if the cursor is at the beginning of the text.
+    cursor.movePosition(QTextCursor::StartOfLine);
+    if (cursor.position() == 0) {
+        cursor.endEditBlock();
+        return; // Do nothing if the cursor is at the start of the document.
+    }
+
+    // Select the entire line including the newline character.
+    cursor.movePosition(QTextCursor::EndOfLine, QTextCursor::KeepAnchor);
+    QString currentLineText = cursor.selectedText() + "\n";
+    cursor.removeSelectedText();
+
+    // Remove the newline character after the selected line if not at the end of the document.
+    if (!cursor.atEnd()) {
+        cursor.deleteChar();
+    }
+
+    // Move cursor up and insert the selected line.
+    cursor.movePosition(QTextCursor::Up);
+    int startOfPreviousLine = cursor.position();
+    cursor.movePosition(QTextCursor::StartOfLine);
+    cursor.insertText(currentLineText);
+
+    // Set cursor position to the beginning of the inserted line.
+    cursor.setPosition(startOfPreviousLine, QTextCursor::MoveAnchor);
+    cursor.movePosition(QTextCursor::StartOfLine, QTextCursor::MoveAnchor);
+    setTextCursor(cursor);
+
+    cursor.endEditBlock();
+}
+
+void CustomTextEdit::moveLineDown() {
+    QTextCursor cursor = textCursor();
+    cursor.beginEditBlock();
+
+    // Check if the cursor is at the last line of the text.
+    cursor.movePosition(QTextCursor::StartOfLine);
+    int startOfLine = cursor.position();
+    cursor.movePosition(QTextCursor::EndOfLine, QTextCursor::KeepAnchor);
+    if(cursor.position() == document()->characterCount() - 1) {
+        cursor.endEditBlock();
+        return; // Do nothing if the cursor is at the end of the document.
+    }
+
+    // Save and remove the current line text.
+    QString currentLineText = cursor.selectedText();
+    cursor.removeSelectedText();
+    if(!cursor.atEnd()) {
+        cursor.deleteChar(); // Remove the newline character after the current line.
+    }
+
+    // Move down and insert the selected line text.
+    if (!cursor.movePosition(QTextCursor::Down)) {
+        cursor.movePosition(QTextCursor::End);
+        cursor.insertText("\n"); // Add a newline at the end if on the penultimate line.
+    }
+
+    cursor.movePosition(QTextCursor::StartOfLine);
+    int newPos = cursor.position();
+    cursor.insertText(currentLineText);
+    if(cursor.position() < document()->characterCount() - 1) {
+        cursor.insertText("\n"); // Add a newline after inserting the text if not at the end of the document.
+    }
+
+    // Update the cursor position to follow the moved line.
+    cursor.setPosition(newPos + currentLineText.length(), QTextCursor::MoveAnchor);
+    setTextCursor(cursor);
+
+    cursor.endEditBlock();
+}
 
