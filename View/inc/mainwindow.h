@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QStandardItemModel>
 #include "clickabletextedit.h"
+#include "finddialog.h"
 #include <QDateTime>
 #include <QList>
 #include <QTextLayout>
@@ -148,11 +149,70 @@ private slots:
      */
     void deleteSelectedLineInSecondary(int position);
 
+    /**
+     * @brief Finds and selects the next occurrence of the text in the primary text edit widget.
+     *
+     * This method searches for the next occurrence of the specified text in the primary text edit widget,
+     * starting from the current cursor position. If the text is found, it selects the text and updates
+     * the cursor position to the end of the found text.
+     *
+     * @param text The text string to search for in the primary text edit widget.
+     */
+    void findNext(const QString &text);
+
+    /**
+     * @brief Finds and selects the previous occurrence of the text in the primary text edit widget.
+     *
+     * This method searches for the previous occurrence of the specified text in the primary text edit widget,
+     * starting from the current cursor position and searching backwards. If the text is found, it selects
+     * the text and updates the cursor position to the beginning of the found text.
+     *
+     * @param text The text string to search for in the primary text edit widget.
+     */
+    void findPrevious(const QString &text);
+
+    /**
+     * @brief Updates the case sensitivity setting for text search operations.
+     *
+     * This method sets the case sensitivity for the text search operations in the application.
+     * When enabled, the search operations will distinguish between upper and lower case letters.
+     *
+     * @param enabled True to enable case sensitivity, false to disable it.
+     */
+    void updateCaseSensitivity(bool enabled);
+
+    /**
+     * @brief Toggles the display between user content and find results in the secondary text edit widget.
+     *
+     * This method switches the content displayed in the secondary text edit widget between the user's
+     * original content and the results of a find operation. It also adjusts the editability of the widget
+     * based on the type of content being displayed.
+     */
+    void toggleFindResults();
+
+    /**
+     * @brief Searches for all occurrences of the specified text in the primary text edit widget and displays the results.
+     *
+     * This method finds all occurrences of the specified text within the primary text edit widget. It formats
+     * each found line with its line number and the matched text, and displays these results in the secondary
+     * text edit widget. If no matches are found, it informs the user via a message box.
+     *
+     * @param text The text string to search for in the primary text edit widget.
+     */
+    void findAllInDocument(const QString &text);
+
 private:
     Ui::MainWindow *ui; ///< Pointer to the UI elements.
     QStandardItemModel *model; ///< Model for managing tree view items.
     QString currentOpenFilePath; ///< Path of the currently open file.
-    QList<LogEntry> logEntries;
+    QList<LogEntry> logEntries; ///< List of log entries displayed in the application.
+    FindDialog *findDialog; ///< Pointer to the find dialog used for text searches.
+    bool caseSensitiveSearch = false; ///< Indicates if the search should be case-sensitive.
+    QString findResults; ///< Stores the search results formatted as HTML.
+    QString userContent; ///< Stores the user content displayed in the secondary text editor when not showing find results.
+    QAction *toggleViewAction; ///< Action associated with toggling between user content and find results.
+    bool isFindResultsDisplayed = false; ///< Flag to indicate if the find results are currently displayed in the secondary text editor.
+
 
     /**
      * @brief Opens and displays the content of the specified file.
@@ -248,6 +308,16 @@ private:
      * all formatting and highlighting that was previously applied.
      */
     QString previousContent;
+
+    /**
+     * @brief Configures the appearance of the primary text edit widget.
+     *
+     * This method sets up the visual styling for the primary text edit widget in the application.
+     * It applies a custom style sheet to change the appearance of selected text, setting the background
+     * color to green and the text color to white. This enhances the visibility of selected text,
+     * making it easier for users to identify their selections within the text.
+     */
+    void setupTextEdit();
 
 };
 

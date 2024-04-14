@@ -25,6 +25,21 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     setupDelegatesAndConnections();
     setupTextFormattingActions();
     setupSecondaryTextEditConnections();
+    setupTextEdit();
+
+    findDialog = new FindDialog(this); // Stvaranje instance FindDialog
+    findDialog->hide(); // Sakrijte dialog prilikom inicijalizacije
+
+    connect(findDialog, &FindDialog::findNext, this, &MainWindow::findNext);
+    connect(findDialog, &FindDialog::findPrevious, this, &MainWindow::findPrevious);
+    connect(findDialog, &FindDialog::caseSensitivityChanged, this, &MainWindow::updateCaseSensitivity);
+    connect(findDialog, &FindDialog::findAll, this, &MainWindow::findAllInDocument);
+
+    // Action to open the find dialog
+    QAction *openFindDialogAction = new QAction(this);
+    openFindDialogAction->setShortcut(QKeySequence("Ctrl+F"));
+    connect(openFindDialogAction, &QAction::triggered, findDialog, &QWidget::show);
+    addAction(openFindDialogAction);
 }
 
 // Destructor
@@ -50,11 +65,11 @@ void MainWindow::initializeFonts() {
 
 // Setup menu bar and actions
 void MainWindow::setupMenuBar() {
-    QMenuBar *menuBar = new QMenuBar(this);
+    // Access the existing menu bar or create a new one if none exists
+    QMenuBar *menuBar = this->menuBar();
 
     // File Menu
     QMenu *fileMenu = menuBar->addMenu(tr("&File"));
-
     QAction *openLogsAction = new QAction(tr("&Open Logs"), this);
     fileMenu->addAction(openLogsAction);
     connect(openLogsAction, &QAction::triggered, this, &MainWindow::on_actionOpen_triggered);
@@ -77,19 +92,21 @@ void MainWindow::setupMenuBar() {
     viewMenu->addAction(changeFontSizeAction);
     connect(changeFontSizeAction, &QAction::triggered, this, &MainWindow::onChangeFontSizeTriggered);
 
+    QAction *toggleViewAction = new QAction(tr("Toggle Find Results"), this);
+    toggleViewAction->setCheckable(true);
+    connect(toggleViewAction, &QAction::toggled, this, &MainWindow::toggleFindResults);
+    viewMenu->addAction(toggleViewAction);
+
     // Sort Menu
     QMenu *sortMenu = menuBar->addMenu(tr("&Sort"));
     QAction *sortAscendingAction = new QAction(tr("Sort Ascending"), this);
     QAction *sortDescendingAction = new QAction(tr("Sort Descending"), this);
-
     sortMenu->addAction(sortAscendingAction);
     sortMenu->addAction(sortDescendingAction);
-
     connect(sortAscendingAction, &QAction::triggered, [this]() { promptForSortConfirmation(true); });
     connect(sortDescendingAction, &QAction::triggered, [this]() { promptForSortConfirmation(false); });
-
-    setMenuBar(menuBar);
 }
+
 
 
 // Setup delegates for custom drawing and connections for signals and slots
@@ -350,6 +367,96 @@ void MainWindow::deleteSelectedLineInSecondary(int position) {
     }
 }
 
+void MainWindow::setupTextEdit() {
+    ui->textEditPrimary->setStyleSheet(
+        "QTextEdit {"
+        "   selection-background-color: green;" // Selected text color and background
+        "   selection-color: white;"
+        "}"
+        );
+}
 
+void MainWindow::findNext(const QString &text) {
+    QTextDocument::FindFlags flags;
+    if (caseSensitiveSearch) {
+        flags |= QTextDocument::FindCaseSensitively;
+    }
 
+    QTextCursor cursor = ui->textEditPrimary->textCursor();
+    QTextCursor foundCursor = ui->textEditPrimary->document()->find(text, cursor, flags);
 
+    if (!foundCursor.isNull()) {
+        ui->textEditPrimary->setTextCursor(foundCursor);
+    } else {
+        QMessageBox::information(this, tr("Text Not Found"), tr("The specified text was not found."));
+        ui->textEditPrimary->setTextCursor(cursor);
+    }
+}
+
+void MainWindow::findPrevious(const QString &text) {
+    QTextDocument::FindFlags flags = QTextDocument::FindBackward;
+    if (caseSensitiveSearch) {
+        flags |= QTextDocument::FindCaseSensitively;
+    }
+
+    QTextCursor cursor = ui->textEditPrimary->textCursor();
+    QTextCursor foundCursor = ui->textEditPrimary->document()->find(text, cursor, flags);
+
+    if (!foundCursor.isNull()) {
+        ui->textEditPrimary->setTextCursor(foundCursor);
+    } else {
+        QMessageBox::information(this, tr("Text Not Found"), tr("No previous occurrence found."));
+        ui->textEditPrimary->setTextCursor(cursor);
+    }
+}
+
+void MainWindow::updateCaseSensitivity(bool enabled) {
+    caseSensitiveSearch = enabled;
+}
+
+void MainWindow::toggleFindResults() {
+    if (isFindResultsDisplayed) {
+        // userContent in textEditSecondary
+        ui->textEditSecondary->setHtml(userContent);
+        ui->textEditSecondary->setReadOnly(false);
+        isFindResultsDisplayed = false;
+    } else {
+        // Find results in textEditSecondary
+        userContent = ui->textEditSecondary->toHtml();
+        ui->textEditSecondary->setHtml(findResults);
+        ui->textEditSecondary->setReadOnly(true);
+        isFindResultsDisplayed = true;
+    }
+}
+
+void MainWindow::findAllInDocument(const QString &text) {
+    QTextDocument *document = ui->textEditPrimary->document();
+    QTextCursor cursor(document);
+    QString formattedResults;
+    bool found = false;
+
+    // CSS needed because of newLines(Now, logs aren't separated with empty new lines).
+    QString style = "<style>p { margin: 0; padding: 0; }</style>";
+
+    while (!cursor.isNull() && !cursor.atEnd()) {
+        cursor = document->find(text, cursor);
+        if (!cursor.isNull() && !cursor.atEnd()) {
+            found = true;
+            int linePos = cursor.blockNumber();
+            QString lineText = cursor.block().text();
+            formattedResults += "<p>" + QString::number(linePos + 1) + ": " + lineText + "</p>";
+        }
+    }
+
+    if (found) {
+        findResults = style + formattedResults;
+        if (!isFindResultsDisplayed) {
+            userContent = ui->textEditSecondary->toHtml();
+            isFindResultsDisplayed = true;
+        }
+        ui->textEditSecondary->setHtml(findResults);
+        ui->textEditSecondary->setReadOnly(true);
+    } else {
+        QMessageBox::information(this, tr("No Matches"), tr("No matches found for the specified text."));
+    }
+}

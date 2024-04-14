@@ -25,6 +25,8 @@ set(PROJECT_SOURCES
         View/src/clickabletextedit.cpp
         View/inc/customtextedit.h
         View/src/customtextedit.cpp
+        View/inc/finddialog.h
+        View/src/finddialog.cpp
         ${TS_FILES}
 )
 
