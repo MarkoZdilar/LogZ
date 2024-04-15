@@ -46,8 +46,12 @@ public:
 
 private slots:
     /**
-     * @brief Slot triggered by the Open action.
-     *        Opens a file dialog, and displays the selected file.
+     * @brief Triggers the file open dialog allowing the user to select multiple files.
+     *
+     * This slot is connected to an action in the File menu. When triggered, it opens
+     * a file dialog that allows users to select multiple files to open. After selecting
+     * the files, users are prompted to enter or select a group name under which the
+     * files will be grouped in the tree view.
      */
     void on_actionOpen_triggered();
 
@@ -215,11 +219,26 @@ private:
 
 
     /**
-     * @brief Opens and displays the content of the specified file.
-     * @param filePath Path of the file to open and display.
-     * @return True if successful, false otherwise.
+     * @brief Opens and displays the content of the specified file under a specific group.
+     * @param filePath Path of the file to open.
+     * @param groupName Name of the group under which the file will be added.
+     * @return True if the file is successfully opened and displayed; false otherwise.
+     *
+     * Opens the specified file and adds it to a specified group in the tree view. If the
+     * file opens successfully, its content is displayed in the primary text edit widget.
      */
-    bool openAndDisplayFile(const QString &filePath);
+    bool openAndDisplayFile(const QString &filePath, const QString &groupName);
+
+    /**
+     * @brief Prompts the user to enter or select a group name.
+     * @return The name of the group if provided; an empty string otherwise.
+     *
+     * This function displays a dialog box prompting the user to either select an existing
+     * group or enter a new group name. If the user provides a valid name and confirms the dialog,
+     * the name is returned. If the user cancels the dialog or enters an invalid name, an empty
+     * string is returned.
+     */
+    QString promptForGroupName();
 
     /**
      * @brief Handles the creation of groups for files.
@@ -230,10 +249,14 @@ private:
     bool handleGrouping(const QString &fileName, const QString &filePath);
 
     /**
-     * @brief Adds a file to a group, creating the group if necessary.
-     * @param groupName Name of the group.
-     * @param fileName Name of the file to add.
-     * @param filePath Path of the file to add.
+     * @brief Adds a file to a specified group in the tree view.
+     * @param groupName The name of the group under which the file will be added.
+     * @param fileName The name of the file to be added.
+     * @param filePath The path of the file to be added.
+     *
+     * Adds a file to an existing or new group in the tree view. If the group does not exist,
+     * a new group item is created. The file is then added to this group. Each file in the
+     * group is represented as a child node under the group node in the tree view.
      */
     void addToGroup(const QString &groupName, const QString &fileName, const QString &filePath);
 

@@ -122,28 +122,45 @@ void MainWindow::setupDelegatesAndConnections() {
 
 void MainWindow::on_actionOpen_triggered() {
     QString filter = "Text files (*.txt);;Log files (*.log);;Net files (*.net);;All files (*.*)";
-    QString filePath = QFileDialog::getOpenFileName(this, "Open File", "", filter);
-    if (!filePath.isEmpty()) {
-        openAndDisplayFile(filePath);
+    QStringList filePaths = QFileDialog::getOpenFileNames(this, "Open Files", "", filter);
+    if (!filePaths.isEmpty()) {
+        QString groupName = promptForGroupName();
+        if (!groupName.isEmpty()) {
+            for (const QString &filePath : filePaths) {
+                openAndDisplayFile(filePath, groupName);
+            }
+        }
     }
 }
 
-bool MainWindow::openAndDisplayFile(const QString &filePath) {
+bool MainWindow::openAndDisplayFile(const QString &filePath, const QString &groupName) {
     QString fileName = QFileInfo(filePath).fileName();
-
-    //Display file in textEditPrimary after handleGrouping is done
-    if (handleGrouping(fileName, filePath)) {
-        QFile file(filePath);
-        if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            QTextStream in(&file);
-            ui->textEditPrimary->setPlainText(in.readAll());
-            currentOpenFilePath = filePath; // Remember the path of the currently opened file
-            file.close();
-            return true;
-        }
+    QFile file(filePath);
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QTextStream in(&file);
+        addToGroup(groupName, fileName, filePath);
+        file.close();
+        return true;
     }
     return false;
 }
+
+
+QString MainWindow::promptForGroupName() {
+    QStringList groups;
+    for (int i = 0; i < model->rowCount(); ++i) {
+        QStandardItem *item = model->item(i);
+        if (item) groups << item->text();
+    }
+    bool ok;
+    QString groupName = QInputDialog::getItem(this, tr("Select or enter a group name"),
+                                              tr("Group name:"), groups, 0, true, &ok);
+    if (ok && !groupName.isEmpty()) {
+        return groupName;
+    }
+    return "";
+}
+
 
 bool MainWindow::handleGrouping(const QString &fileName, const QString &filePath) {
     QStringList groups;
@@ -174,11 +191,11 @@ void MainWindow::addToGroup(const QString &groupName, const QString &fileName, c
         model->appendRow(groupItem);
         ui->treeView->expand(model->indexFromItem(groupItem)); // Automatically expand the new group
     }
-
     QStandardItem *fileItem = new QStandardItem(fileName);
-    fileItem->setData(filePath, Qt::UserRole); // Store the full file path for later use within UserRole
+    fileItem->setData(filePath, Qt::UserRole);
     groupItem->appendRow(fileItem);
 }
+
 
 void MainWindow::onTreeViewClicked(const QModelIndex &index) {
     QString filePath = model->data(index, Qt::UserRole).toString();
