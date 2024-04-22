@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
 #include "fileitemdelegate.h"
+#include "zipviewerdialog.h"
 #include <QFileDialog>
 #include <QFile>
 #include <QIODevice>
@@ -15,6 +16,11 @@
 #include <QTextCharFormat>
 #include <utility>
 #include <algorithm>
+#include <KArchive>
+#include <KZip>
+#include <KTar>
+#include <QStandardPaths>
+#include <QTextDocumentFragment>
 
 // Constructor initialization
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
@@ -26,20 +32,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     setupTextFormattingActions();
     setupSecondaryTextEditConnections();
     setupTextEdit();
-
-    findDialog = new FindDialog(this); // Stvaranje instance FindDialog
-    findDialog->hide(); // Sakrijte dialog prilikom inicijalizacije
-
-    connect(findDialog, &FindDialog::findNext, this, &MainWindow::findNext);
-    connect(findDialog, &FindDialog::findPrevious, this, &MainWindow::findPrevious);
-    connect(findDialog, &FindDialog::caseSensitivityChanged, this, &MainWindow::updateCaseSensitivity);
-    connect(findDialog, &FindDialog::findAll, this, &MainWindow::findAllInDocument);
-
-    // Action to open the find dialog
-    QAction *openFindDialogAction = new QAction(this);
-    openFindDialogAction->setShortcut(QKeySequence("Ctrl+F"));
-    connect(openFindDialogAction, &QAction::triggered, findDialog, &QWidget::show);
-    addAction(openFindDialogAction);
+    setupFindDialog();
 }
 
 // Destructor
@@ -107,8 +100,6 @@ void MainWindow::setupMenuBar() {
     connect(sortDescendingAction, &QAction::triggered, [this]() { promptForSortConfirmation(false); });
 }
 
-
-
 // Setup delegates for custom drawing and connections for signals and slots
 void MainWindow::setupDelegatesAndConnections() {
     auto delegate = new FileItemDelegate(ui->treeView);
@@ -120,31 +111,157 @@ void MainWindow::setupDelegatesAndConnections() {
     connect(ui->textEditPrimary, &ClickableTextEdit::ctrlClicked, this, &MainWindow::onTextEditPrimaryCtrlClicked);
 }
 
+void MainWindow::setupFindDialog() {
+    findDialog = new FindDialog(this);
+    findDialog->hide(); // Hide dialog after initialization
+
+    connect(findDialog, &FindDialog::findNext, this, &MainWindow::findNext);
+    connect(findDialog, &FindDialog::findPrevious, this, &MainWindow::findPrevious);
+    connect(findDialog, &FindDialog::caseSensitivityChanged, this, &MainWindow::updateCaseSensitivity);
+    connect(findDialog, &FindDialog::findAll, this, &MainWindow::findAllInDocument);
+
+    // Action to open dialog on Ctrl+F
+    QAction *openFindDialogAction = new QAction(this);
+    openFindDialogAction->setShortcut(QKeySequence("Ctrl+F"));
+    connect(openFindDialogAction, &QAction::triggered, findDialog, &QWidget::show);
+    addAction(openFindDialogAction);
+}
+
 void MainWindow::on_actionOpen_triggered() {
-    QString filter = "Text files (*.txt);;Log files (*.log);;Net files (*.net);;All files (*.*)";
-    QStringList filePaths = QFileDialog::getOpenFileNames(this, "Open Files", "", filter);
+    // Filter for file dialog to restrict files that user can open.
+    QString filter = "All supported files (*.txt *.log *.zip);;Text files (*.txt);;Log files (*.log);;ZIP archives (*.zip);;All files (*.*)";
+    QStringList filePaths = QFileDialog::getOpenFileNames(this, tr("Open Files"), "", filter);
+
+    // Check if at least one file has been selected.
     if (!filePaths.isEmpty()) {
+        // Prompt user to enter or select a group for files.
         QString groupName = promptForGroupName();
         if (!groupName.isEmpty()) {
+            // Process each selected file.
             for (const QString &filePath : filePaths) {
-                openAndDisplayFile(filePath, groupName);
+                // If it is a ZIP file, show the ZIP Viewer Dialog.
+                if (filePath.endsWith(".zip")) {
+                    ZipViewerDialog viewer(filePath, this);
+                    // Execute the dialog and check if the user accepted (clicked OK).
+                    if (viewer.exec() == QDialog::Accepted) {
+                        // Extract the selected files from the ZIP.
+                        QStringList filesToAdd = viewer.getSelectedFiles();
+                        for (const QString &fileInsideZip : filesToAdd) {
+                            // Extract and temporarily store the selected file from the ZIP.
+                            QString tempPath = extractFileFromZip(filePath, fileInsideZip);
+                            // If the file was successfully extracted, add it to the group.
+                            if (!tempPath.isEmpty()) {
+                                addToGroup(groupName, QFileInfo(fileInsideZip).fileName(), tempPath);
+                            }
+                        }
+                    }
+                } else {
+                    // For other file types, open and display them as usual.
+                    openAndDisplayFile(filePath, groupName);
+                }
             }
         }
     }
 }
 
+QString MainWindow::extractFileFromZip(const QString &zipFilePath, const QString &fileInsideZip) {
+    // Open the ZIP file using KZip.
+    KZip archive(zipFilePath);
+    if (!archive.open(QIODevice::ReadOnly)) {
+        QMessageBox::warning(this, tr("Error"), tr("Failed to open ZIP file."));
+        return QString();
+    }
+
+    // Access the root directory of the ZIP archive.
+    const KArchiveDirectory *rootDir = archive.directory();
+    // Find the requested file in the ZIP archive.
+    const KArchiveEntry *entry = rootDir->entry(fileInsideZip);
+    if (!entry || !entry->isFile()) {
+        QMessageBox::warning(this, tr("Error"), tr("The specified file does not exist within the ZIP archive."));
+        return QString();
+    }
+
+    // Cast the entry to a file (since we know it is a file at this point).
+    const KArchiveFile *file = static_cast<const KArchiveFile *>(entry);
+    // Create a temporary path where the file's contents will be written.
+    QString tempPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/" + fileInsideZip;
+
+    // Open or create the temporary file.
+    QFile tempFile(tempPath);
+    if (!tempFile.open(QIODevice::WriteOnly)) {
+        QMessageBox::warning(this, tr("Error"), tr("Unable to create temporary file for ZIP contents."));
+        return QString();
+    }
+
+    // Write the file contents to the temporary file.
+    tempFile.write(file->data());
+    tempFile.close();
+    // Close the archive as it's no longer needed.
+    archive.close();
+
+    // Return the path to the temporary file.
+    return tempPath;
+}
+
 bool MainWindow::openAndDisplayFile(const QString &filePath, const QString &groupName) {
     QString fileName = QFileInfo(filePath).fileName();
     QFile file(filePath);
-    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QTextStream in(&file);
-        addToGroup(groupName, fileName, filePath);
-        file.close();
-        return true;
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QMessageBox::warning(this, tr("Error"), tr("Unable to open file."));
+        return false;
     }
-    return false;
+
+    QTextStream in(&file);
+    QStringList fileContent;
+    QString line;
+    int lineCount = 0;
+    const int maxLinesPerFile = 100000; // Max number of lines per file
+    int filePartNumber = 1;
+
+    while (!in.atEnd()) {
+        line = in.readLine();
+        fileContent.append(line);
+        lineCount++;
+
+        if (lineCount >= maxLinesPerFile) {
+            QString partFileName = QString("%1-%2").arg(filePartNumber).arg(fileName);
+            QString tempPath = writeLinesToFile(fileContent, partFileName);
+            addToGroup(groupName, partFileName, tempPath);
+
+            fileContent.clear(); // reset for next file
+            lineCount = 0;
+            filePartNumber++;
+        }
+    }
+
+    if (!fileContent.isEmpty()) {
+        if (filePartNumber > 1) {  // If file is being "broken" into parts, then add numbers before name and add all parts to group
+            QString partFileName = QString("%1-%2").arg(filePartNumber).arg(fileName);
+            QString tempPath = writeLinesToFile(fileContent, partFileName);
+            addToGroup(groupName, partFileName, tempPath);
+        } else {
+            // If file have less than 100 000 lines, add it to group without number as filename prefix
+            QString tempPath = writeLinesToFile(fileContent, fileName);
+            addToGroup(groupName, fileName, tempPath);
+        }
+    }
+
+    file.close();
+    return true;
 }
 
+QString MainWindow::writeLinesToFile(const QStringList &lines, const QString &fileName) {
+    QString tempPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/" + fileName;
+    QFile tempFile(tempPath);
+    if (tempFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&tempFile);
+        for (const QString &line : lines) {
+            out << line << "\n";
+        }
+        tempFile.close();
+    }
+    return tempPath;
+}
 
 QString MainWindow::promptForGroupName() {
     QStringList groups;
@@ -195,6 +312,8 @@ void MainWindow::addToGroup(const QString &groupName, const QString &fileName, c
     fileItem->setData(filePath, Qt::UserRole);
     groupItem->appendRow(fileItem);
 }
+
+
 
 
 void MainWindow::onTreeViewClicked(const QModelIndex &index) {
@@ -332,39 +451,36 @@ void MainWindow::sortDescendingConfirmed() {
 void MainWindow::promptForSortConfirmation(bool ascending) {
     // Store everything from textEditSecondary for later Undo use.
     previousContent = ui->textEditSecondary->toHtml();
-
-    auto reply = QMessageBox::question(this, tr("Sort Confirmation"),
-                                       tr("Sorting logs will remove all formatting. Do you wish to continue?"),
-                                       QMessageBox::Yes | QMessageBox::No);
-
-    if (reply == QMessageBox::Yes) {
-        sortLogs(ascending);
-    }
+    sortLogs(ascending);
 }
-
 
 void MainWindow::sortLogs(bool ascending) {
     QTextDocument *doc = ui->textEditSecondary->document();
-    QStringList lines;
+    QVector<QPair<QString, QString>> lineData; // HTML and plain text pairs
 
-    // Extract each line
+
     for (QTextBlock block = doc->begin(); block.isValid(); block = block.next()) {
-        lines.append(block.text());
+        QTextCursor cursor(block);
+        cursor.select(QTextCursor::LineUnderCursor);
+        QString html = cursor.selection().toHtml();
+        QString plainText = block.text();
+        lineData.append(qMakePair(plainText, html));
     }
 
-    // Sort by system time
-    std::sort(lines.begin(), lines.end(), [ascending](const QString &a, const QString &b) {
-        QDateTime timeA = QDateTime::fromString(a.left(21), "[yyyy-MM-dd HH:mm:ss]");
-        QDateTime timeB = QDateTime::fromString(b.left(21), "[yyyy-MM-dd HH:mm:ss]");
-        return ascending ? timeA < timeB : timeA > timeB;
+    // Sorting plain text, preserving HTML
+    std::sort(lineData.begin(), lineData.end(), [ascending](const QPair<QString, QString> &a, const QPair<QString, QString> &b) {
+        return ascending ? a.first < b.first : a.first > b.first;
     });
 
-    // Show sorted logs
+    // Rebuild new file with preserved HTML editings.
     ui->textEditSecondary->clear();
-    for (const QString &line : lines) {
-        ui->textEditSecondary->append(line);
+    QTextCursor newCursor(ui->textEditSecondary->document());
+    for (const auto &data : lineData) {
+        newCursor.insertHtml(data.second); // Insert HTML
+        newCursor.insertBlock(); // Add line
     }
 }
+
 
 void MainWindow::undoChanges() {
     ui->textEditSecondary->setHtml(previousContent);

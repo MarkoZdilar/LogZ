@@ -9,7 +9,10 @@
 #include <QList>
 #include <QTextLayout>
 #include <QTextDocument>
-
+#include <KArchive>
+#include <KZip>
+#include <KTar>
+#include <QStandardPaths>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -205,6 +208,20 @@ private slots:
      */
     void findAllInDocument(const QString &text);
 
+    /**
+     * @brief Extracts a specific file(s) from a ZIP archive and writes it to a temporary location.
+     *
+     * This function opens a ZIP file, locates the specified files within the archive, and extracts
+     * its contents to a temporary file on the disk. It then returns the path to this temporary file.
+     * This is useful when you need to access the contents of a file inside a ZIP archive without
+     * extracting the entire archive.
+     *
+     * @param zipFilePath The path to the ZIP file from which to extract.
+     * @param fileInsideZip The path of the file inside the ZIP archive to extract.
+     * @return QString The path to the extracted temporary file, or an empty QString if extraction failed.
+     */
+    QString extractFileFromZip(const QString &zipFilePath, const QString &fileInsideZip);
+
 private:
     Ui::MainWindow *ui; ///< Pointer to the UI elements.
     QStandardItemModel *model; ///< Model for managing tree view items.
@@ -228,6 +245,18 @@ private:
      * file opens successfully, its content is displayed in the primary text edit widget.
      */
     bool openAndDisplayFile(const QString &filePath, const QString &groupName);
+
+    /**
+     * @brief Writes a list of lines to a temporary file.
+     *
+     * This function creates a new temporary file and writes the provided list of lines to it.
+     * The function returns the path to the created file, allowing further manipulation or display.
+     *
+     * @param lines QStringList containing all lines to be written to the file.
+     * @param fileName The name to be assigned to the temporary file.
+     * @return QString The path to the newly created temporary file.
+     */
+    QString writeLinesToFile(const QStringList &lines, const QString &fileName);
 
     /**
      * @brief Prompts the user to enter or select a group name.
@@ -300,6 +329,15 @@ private:
     void setupSecondaryTextEditConnections();
 
     /**
+     * @brief Sets up the find dialog and associated actions.
+     *
+     * This function initializes the find dialog, configures its visibility, and connects
+     * the necessary signals and slots for the search functionality within the application.
+     * It also sets up the shortcut and action for triggering the find dialog.
+     */
+    void setupFindDialog();
+
+    /**
      * @brief Sorts the logs in the secondary text edit widget.
      *
      * Sorts the logs displayed in the secondary text edit widget either in ascending
@@ -342,6 +380,16 @@ private:
      */
     void setupTextEdit();
 
+    /**
+     * @brief Decompresses and processes files within an archive file.
+     *
+     * This method opens an archive file, decompresses its contents, and
+     * optionally saves them to a specified output directory or directly uses them.
+     *
+     * @param filePath Path to the archive file.
+     * @param outputPath Directory where the decompressed content should be saved.
+     */
+    void processArchiveFile(const QString &filePath, const QString &outputPath);
 };
 
 #endif // MAINWINDOW_H
