@@ -90,6 +90,20 @@ void MainWindow::setupMenuBar() {
     connect(toggleViewAction, &QAction::toggled, this, &MainWindow::toggleFindResults);
     viewMenu->addAction(toggleViewAction);
 
+    // Themes
+    QMenu *themeMenu = viewMenu->addMenu(tr("&Themes"));
+    QAction *darkThemeAction = new QAction(tr("&Dark Theme"), this);
+    QAction *blueThemeAction = new QAction(tr("&Blue Theme"), this);
+    QAction *lightThemeAction = new QAction(tr("&Light Theme"), this);
+
+    themeMenu->addAction(darkThemeAction);
+    themeMenu->addAction(blueThemeAction);
+    themeMenu->addAction(lightThemeAction);
+
+    connect(darkThemeAction, &QAction::triggered, this, &MainWindow::setDarkTheme);
+    connect(blueThemeAction, &QAction::triggered, this, &MainWindow::setBlueTheme);
+    connect(lightThemeAction, &QAction::triggered, this, &MainWindow::setLightTheme);
+
     // Sort Menu
     QMenu *sortMenu = menuBar->addMenu(tr("&Sort"));
     QAction *sortAscendingAction = new QAction(tr("Sort Ascending"), this);
@@ -592,4 +606,29 @@ void MainWindow::findAllInDocument(const QString &text) {
     } else {
         QMessageBox::information(this, tr("No Matches"), tr("No matches found for the specified text."));
     }
+}
+
+void MainWindow::setDarkTheme() {
+    //QString windowStyle = "background-color: #1f1f1f; color: #434343;";
+    QString textStyle = "QTextEdit { background-color: #121212; color: #FFFFFF; }";
+    QString treeStyle = "QTreeView { background-color: #121212; color: #FFFFFF; }";
+
+    //this->setStyleSheet(windowStyle);
+    ui->textEditPrimary->setStyleSheet(textStyle);
+    ui->textEditSecondary->setStyleSheet(textStyle);
+    ui->treeView->setStyleSheet(treeStyle);
+}
+
+void MainWindow::setBlueTheme() {
+    QString styleSheet = "background-color: #06013d; color: #FFFFFF;";
+    ui->textEditPrimary->setStyleSheet(styleSheet);
+    ui->textEditSecondary->setStyleSheet(styleSheet);
+    ui->treeView->setStyleSheet(styleSheet);
+}
+
+void MainWindow::setLightTheme() {
+    QString styleSheet = "background-color: #FFFFFF; color: #000000;";
+    ui->textEditPrimary->setStyleSheet(styleSheet);
+    ui->textEditSecondary->setStyleSheet(styleSheet);
+    ui->treeView->setStyleSheet(styleSheet);
 }

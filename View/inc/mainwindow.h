@@ -222,6 +222,35 @@ private slots:
      */
     QString extractFileFromZip(const QString &zipFilePath, const QString &fileInsideZip);
 
+    /**
+     * @brief Sets the dark theme for the application.
+     *
+     * This function applies a dark color scheme to the main window
+     * and its components. It sets the background to dark gray and
+     * the text color to white to ensure readability.
+     */
+    void setDarkTheme();
+
+    /**
+     * @brief Sets the blue theme for the application.
+     *
+     * This function applies a blue color scheme to the main window
+     * and its components. It uses a deep blue color for the background
+     * and a light color for the text, providing a high contrast
+     * and a professional look.
+     */
+    void setBlueTheme();
+
+    /**
+     * @brief Sets the light theme for the application.
+     *
+     * This function applies a light color scheme to the main window
+     * and its components. It sets the background to white and the
+     * text color to black, which is ideal for brightly lit environments
+     * or users who prefer a more traditional look.
+     */
+    void setLightTheme();
+
 private:
     Ui::MainWindow *ui; ///< Pointer to the UI elements.
     QStandardItemModel *model; ///< Model for managing tree view items.
