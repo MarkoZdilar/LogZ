@@ -327,9 +327,6 @@ void MainWindow::addToGroup(const QString &groupName, const QString &fileName, c
     groupItem->appendRow(fileItem);
 }
 
-
-
-
 void MainWindow::onTreeViewClicked(const QModelIndex &index) {
     QString filePath = model->data(index, Qt::UserRole).toString();
     QFile file(filePath);
@@ -495,7 +492,6 @@ void MainWindow::sortLogs(bool ascending) {
     }
 }
 
-
 void MainWindow::undoChanges() {
     ui->textEditSecondary->setHtml(previousContent);
 }
@@ -589,9 +585,8 @@ void MainWindow::findAllInDocument(const QString &text) {
         cursor = document->find(text, cursor);
         if (!cursor.isNull() && !cursor.atEnd()) {
             found = true;
-            int linePos = cursor.blockNumber();
             QString lineText = cursor.block().text();
-            formattedResults += "<p>" + QString::number(linePos + 1) + ": " + lineText + "</p>";
+            formattedResults += "<p>" + lineText + "</p>";
         }
     }
 
