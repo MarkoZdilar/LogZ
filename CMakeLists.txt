@@ -4,7 +4,7 @@ project(LogZ VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
+set(CMAKE_AUTORCC ON) # Ovo osigurava automatsko rukovanje Qt resource datotekama
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -17,6 +17,9 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets LinguistTools)
 find_package(KF6Archive REQUIRED)
 
 set(TS_FILES LogZ_en_HR.ts)
+set(PROJECT_RESOURCES
+    ../resources.qrc
+)
 
 set(PROJECT_SOURCES
         main.cpp
@@ -40,6 +43,7 @@ set(PROJECT_SOURCES
         Model/inc/LogManager.h
         Model/src/LogManager.cpp
         ${TS_FILES}
+        ${PROJECT_RESOURCES}
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)

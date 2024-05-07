@@ -45,9 +45,9 @@ void ZipViewerDialog::populateTreeWidget(const KArchiveDirectory* directory, QTr
         item->setCheckState(0, Qt::Unchecked); // Sets checkbox to unchecked by default.
 
         if (e->isDirectory()) {
-            item->setIcon(0, QIcon(":/icons/folder.png"));  // Assuming an icon for directories is available.
+            item->setIcon(0, QIcon(":/Resources/Icons/folder.png"));
         } else {
-            item->setIcon(0, QIcon(":/icons/file.png"));  // Assuming an icon for files is available.
+            item->setIcon(0, QIcon(":/Resources/Icons/file.png"));
         }
         if (parentItem) {
             parentItem->addChild(item);
