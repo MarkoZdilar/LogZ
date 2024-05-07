@@ -33,6 +33,12 @@ set(PROJECT_SOURCES
         View/src/finddialog.cpp
         View/inc/zipviewerdialog.h
         View/src/zipviewerdialog.cpp
+        View/inc/GroupManager.h
+        View/src/GroupManager.cpp
+        Model/inc/FileExtractor.h
+        Model/src/FileExtractor.cpp
+        Model/inc/LogManager.h
+        Model/src/LogManager.cpp
         ${TS_FILES}
 )
 
@@ -55,7 +61,10 @@ else()
     qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 endif()
 
-target_include_directories(LogZ PRIVATE View/inc)
+target_include_directories(LogZ PRIVATE
+    View/inc
+    Model/inc
+)
 
 target_link_libraries(LogZ PRIVATE Qt${QT_VERSION_MAJOR}::Widgets KF6::Archive)
 

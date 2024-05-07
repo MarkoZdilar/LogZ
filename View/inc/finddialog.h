@@ -54,10 +54,10 @@ signals:
     void caseSensitivityChanged(bool enabled);
 
 private:
-    QLineEdit *lineEdit;
-    QPushButton *findNextButton, *findPreviousButton, *findAllButton;
-    QCheckBox *caseSensitiveCheckBox;
-    QVBoxLayout layout;
+    QLineEdit *lineEdit; ///< Line edit for entering the text to search.
+    QPushButton *findNextButton, *findPreviousButton, *findAllButton; ///< Button to find the next/previous/all occurrence of the search term.
+    QCheckBox *caseSensitiveCheckBox; ///< Checkbox to toggle case sensitivity in search.
+    QVBoxLayout layout; ///< Layout to arrange widgets vertically in the dialog.
 };
 
 #endif // FINDDIALOG_H

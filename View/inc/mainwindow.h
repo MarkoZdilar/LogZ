@@ -5,6 +5,8 @@
 #include <QStandardItemModel>
 #include "clickabletextedit.h"
 #include "finddialog.h"
+#include "LogManager.h"
+#include "GroupManager.h"
 #include <QDateTime>
 #include <QList>
 #include <QTextLayout>
@@ -17,16 +19,6 @@
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
-
-struct LogEntry {
-    QDateTime dateTime;
-    QString text;
-    QList<QTextLayout::FormatRange> formats;
-
-    // Constructor
-    LogEntry(QDateTime dt, const QString& txt, QList<QTextLayout::FormatRange> fmts)
-        : dateTime(dt), text(txt), formats(fmts) {}
-};
 
 /**
  * @brief The MainWindow class provides the main application window and manages user interactions.
@@ -209,20 +201,6 @@ private slots:
     void findAllInDocument(const QString &text);
 
     /**
-     * @brief Extracts a specific file(s) from a ZIP archive and writes it to a temporary location.
-     *
-     * This function opens a ZIP file, locates the specified files within the archive, and extracts
-     * its contents to a temporary file on the disk. It then returns the path to this temporary file.
-     * This is useful when you need to access the contents of a file inside a ZIP archive without
-     * extracting the entire archive.
-     *
-     * @param zipFilePath The path to the ZIP file from which to extract.
-     * @param fileInsideZip The path of the file inside the ZIP archive to extract.
-     * @return QString The path to the extracted temporary file, or an empty QString if extraction failed.
-     */
-    QString extractFileFromZip(const QString &zipFilePath, const QString &fileInsideZip);
-
-    /**
      * @brief Sets the dark theme for the application.
      *
      * This function applies a dark color scheme to the main window
@@ -251,6 +229,23 @@ private slots:
      */
     void setLightTheme();
 
+    /**
+     * @brief Displays an error message in a message box.
+     *
+     * This slot is connected to the errorOccurred signal from the LogManager.
+     * When an error occurs, this slot is triggered and displays the error using a QMessageBox.
+     *
+     * @param error The error message to display.
+     */
+    void displayError(const QString &error);
+
+    /**
+     * @brief Sorts the logs in the secondary text editor.
+     *
+     * @param ascending Specifies the sorting order. If true, logs are sorted in ascending order; if false, in descending order.
+     */
+    void sortLogs(bool ascending);
+
 private:
     Ui::MainWindow *ui; ///< Pointer to the UI elements.
     QStandardItemModel *model; ///< Model for managing tree view items.
@@ -262,30 +257,8 @@ private:
     QString userContent; ///< Stores the user content displayed in the secondary text editor when not showing find results.
     QAction *toggleViewAction; ///< Action associated with toggling between user content and find results.
     bool isFindResultsDisplayed = false; ///< Flag to indicate if the find results are currently displayed in the secondary text editor.
-
-
-    /**
-     * @brief Opens and displays the content of the specified file under a specific group.
-     * @param filePath Path of the file to open.
-     * @param groupName Name of the group under which the file will be added.
-     * @return True if the file is successfully opened and displayed; false otherwise.
-     *
-     * Opens the specified file and adds it to a specified group in the tree view. If the
-     * file opens successfully, its content is displayed in the primary text edit widget.
-     */
-    bool openAndDisplayFile(const QString &filePath, const QString &groupName);
-
-    /**
-     * @brief Writes a list of lines to a temporary file.
-     *
-     * This function creates a new temporary file and writes the provided list of lines to it.
-     * The function returns the path to the created file, allowing further manipulation or display.
-     *
-     * @param lines QStringList containing all lines to be written to the file.
-     * @param fileName The name to be assigned to the temporary file.
-     * @return QString The path to the newly created temporary file.
-     */
-    QString writeLinesToFile(const QStringList &lines, const QString &fileName);
+    LogManager* logManager; ///< Pointer to an instance of LogManager which handles the logic for managing log files.
+    GroupManager* groupManager; ///< Pointer to an instance of GroupManager which manages group creation and color settings for the groups.
 
     /**
      * @brief Prompts the user to enter or select a group name.
@@ -367,15 +340,14 @@ private:
     void setupFindDialog();
 
     /**
-     * @brief Sorts the logs in the secondary text edit widget.
-     *
-     * Sorts the logs displayed in the secondary text edit widget either in ascending
-     * or descending order based on their timestamps. This sorting does not
-     * take into account any formatting or highlighting previously applied to the text.
-     *
-     * @param ascending If true, logs are sorted in ascending order; if false, in descending order.
+     * @brief Sets up the item delegate for styling tree view items.
      */
-    void sortLogs(bool ascending);
+    void setupItemDelegate();
+
+    /**
+     * @brief Sets up the connections between signals and slot of LogManager and GroupManager.
+     */
+    void setupGroupLogConnections();
 
     /**
      * @brief Prompts the user for confirmation before sorting logs.

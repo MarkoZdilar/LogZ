@@ -27,6 +27,11 @@ public:
      */
     ZipViewerDialog(const QString &zipPath, QWidget *parent = nullptr);
 
+    /**
+     * @brief Retrieves the list of file paths selected by the user.
+     *
+     * @return A list of file paths.
+     */
     QStringList getSelectedFiles() const;
 
 private slots:
@@ -34,7 +39,7 @@ private slots:
 
 private:
     QTreeWidget *treeWidget; ///< Tree widget to display the contents of the ZIP file.
-    QStringList selectedFiles;
+    QStringList selectedFiles; ///< List of selected file paths from the ZIP file.
 
     /**
      * @brief Loads the contents of the ZIP file into the tree widget.
@@ -49,6 +54,11 @@ private:
      */
     void populateTreeWidget(const KArchiveDirectory* directory, QTreeWidgetItem* parentItem = nullptr);
 
+    /**
+     * @brief Recursively collects the checked (selected) file paths from the tree widget.
+     *
+     * @param item The current tree widget item being examined.
+     */
     void collectSelectedFiles(QTreeWidgetItem* item);
 };
 

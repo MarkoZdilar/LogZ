@@ -21,9 +21,16 @@
 #include <KTar>
 #include <QStandardPaths>
 #include <QTextDocumentFragment>
+#include <QTextBlock>
+#include <QDateTime>
+#include <QRegularExpression>
 
-// Constructor initialization
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWindow) {
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent),
+    ui(new Ui::MainWindow),
+    model(new QStandardItemModel(this)),
+    logManager(new LogManager),
+    groupManager(new GroupManager(model, this)) {
     ui->setupUi(this);
     initializeTreeView();
     initializeFonts();
@@ -33,11 +40,14 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::MainWi
     setupSecondaryTextEditConnections();
     setupTextEdit();
     setupFindDialog();
+    setupGroupLogConnections();
 }
 
 // Destructor
 MainWindow::~MainWindow() {
     delete ui;
+    delete logManager;
+    delete groupManager;
 }
 
 // Initialize the tree view with proper width
@@ -45,8 +55,7 @@ void MainWindow::initializeTreeView() {
     int percentWidth = 40;
     int treeWidth = this->width() * percentWidth / 100;
     ui->treeView->setMaximumWidth(treeWidth);
-    model = new QStandardItemModel(this);
-    ui->treeView->setModel(model);
+    ui->treeView->setModel(model);  // Samo postavite model, ne stvarajte novi
 }
 
 // Initialize font settings for text edits
@@ -142,139 +151,30 @@ void MainWindow::setupFindDialog() {
 }
 
 void MainWindow::on_actionOpen_triggered() {
-    // Filter for file dialog to restrict files that user can open.
     QString filter = "All supported files (*.txt *.log *.zip);;Text files (*.txt);;Log files (*.log);;ZIP archives (*.zip);;All files (*.*)";
     QStringList filePaths = QFileDialog::getOpenFileNames(this, tr("Open Files"), "", filter);
 
-    // Check if at least one file has been selected.
     if (!filePaths.isEmpty()) {
-        // Prompt user to enter or select a group for files.
-        QString groupName = promptForGroupName();
+        QString groupName = groupManager->promptForGroupNameAndColor();
         if (!groupName.isEmpty()) {
-            // Process each selected file.
             for (const QString &filePath : filePaths) {
-                // If it is a ZIP file, show the ZIP Viewer Dialog.
                 if (filePath.endsWith(".zip")) {
                     ZipViewerDialog viewer(filePath, this);
-                    // Execute the dialog and check if the user accepted (clicked OK).
                     if (viewer.exec() == QDialog::Accepted) {
-                        // Extract the selected files from the ZIP.
                         QStringList filesToAdd = viewer.getSelectedFiles();
                         for (const QString &fileInsideZip : filesToAdd) {
-                            // Extract and temporarily store the selected file from the ZIP.
-                            QString tempPath = extractFileFromZip(filePath, fileInsideZip);
-                            // If the file was successfully extracted, add it to the group.
+                            QString tempPath = logManager->extractFileFromZip(filePath, fileInsideZip);
                             if (!tempPath.isEmpty()) {
-                                addToGroup(groupName, QFileInfo(fileInsideZip).fileName(), tempPath);
+                                groupManager->addToGroup(groupName, QFileInfo(fileInsideZip).fileName(), tempPath);
                             }
                         }
                     }
                 } else {
-                    // For other file types, open and display them as usual.
-                    openAndDisplayFile(filePath, groupName);
+                    logManager->openAndDisplayFile(filePath, groupName);
                 }
             }
         }
     }
-}
-
-QString MainWindow::extractFileFromZip(const QString &zipFilePath, const QString &fileInsideZip) {
-    // Open the ZIP file using KZip.
-    KZip archive(zipFilePath);
-    if (!archive.open(QIODevice::ReadOnly)) {
-        QMessageBox::warning(this, tr("Error"), tr("Failed to open ZIP file."));
-        return QString();
-    }
-
-    // Access the root directory of the ZIP archive.
-    const KArchiveDirectory *rootDir = archive.directory();
-    // Find the requested file in the ZIP archive.
-    const KArchiveEntry *entry = rootDir->entry(fileInsideZip);
-    if (!entry || !entry->isFile()) {
-        QMessageBox::warning(this, tr("Error"), tr("The specified file does not exist within the ZIP archive."));
-        return QString();
-    }
-
-    // Cast the entry to a file (since we know it is a file at this point).
-    const KArchiveFile *file = static_cast<const KArchiveFile *>(entry);
-    // Create a temporary path where the file's contents will be written.
-    QString tempPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/" + fileInsideZip;
-
-    // Open or create the temporary file.
-    QFile tempFile(tempPath);
-    if (!tempFile.open(QIODevice::WriteOnly)) {
-        QMessageBox::warning(this, tr("Error"), tr("Unable to create temporary file for ZIP contents."));
-        return QString();
-    }
-
-    // Write the file contents to the temporary file.
-    tempFile.write(file->data());
-    tempFile.close();
-    // Close the archive as it's no longer needed.
-    archive.close();
-
-    // Return the path to the temporary file.
-    return tempPath;
-}
-
-bool MainWindow::openAndDisplayFile(const QString &filePath, const QString &groupName) {
-    QString fileName = QFileInfo(filePath).fileName();
-    QFile file(filePath);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QMessageBox::warning(this, tr("Error"), tr("Unable to open file."));
-        return false;
-    }
-
-    QTextStream in(&file);
-    QStringList fileContent;
-    QString line;
-    int lineCount = 0;
-    const int maxLinesPerFile = 100000; // Max number of lines per file
-    int filePartNumber = 1;
-
-    while (!in.atEnd()) {
-        line = in.readLine();
-        fileContent.append(line);
-        lineCount++;
-
-        if (lineCount >= maxLinesPerFile) {
-            QString partFileName = QString("%1-%2").arg(filePartNumber).arg(fileName);
-            QString tempPath = writeLinesToFile(fileContent, partFileName);
-            addToGroup(groupName, partFileName, tempPath);
-
-            fileContent.clear(); // reset for next file
-            lineCount = 0;
-            filePartNumber++;
-        }
-    }
-
-    if (!fileContent.isEmpty()) {
-        if (filePartNumber > 1) {  // If file is being "broken" into parts, then add numbers before name and add all parts to group
-            QString partFileName = QString("%1-%2").arg(filePartNumber).arg(fileName);
-            QString tempPath = writeLinesToFile(fileContent, partFileName);
-            addToGroup(groupName, partFileName, tempPath);
-        } else {
-            // If file have less than 100 000 lines, add it to group without number as filename prefix
-            QString tempPath = writeLinesToFile(fileContent, fileName);
-            addToGroup(groupName, fileName, tempPath);
-        }
-    }
-
-    file.close();
-    return true;
-}
-
-QString MainWindow::writeLinesToFile(const QStringList &lines, const QString &fileName) {
-    QString tempPath = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/" + fileName;
-    QFile tempFile(tempPath);
-    if (tempFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        QTextStream out(&tempFile);
-        for (const QString &line : lines) {
-            out << line << "\n";
-        }
-        tempFile.close();
-    }
-    return tempPath;
 }
 
 QString MainWindow::promptForGroupName() {
@@ -316,25 +216,26 @@ bool MainWindow::handleGrouping(const QString &fileName, const QString &filePath
 }
 
 void MainWindow::addToGroup(const QString &groupName, const QString &fileName, const QString &filePath) {
-    QList<QStandardItem *> found = model->findItems(groupName, Qt::MatchExactly);
-    QStandardItem *groupItem = found.isEmpty() ? new QStandardItem(groupName) : found.first();
-    if (found.isEmpty()) {
-        model->appendRow(groupItem);
-        ui->treeView->expand(model->indexFromItem(groupItem)); // Automatically expand the new group
-    }
-    QStandardItem *fileItem = new QStandardItem(fileName);
-    fileItem->setData(filePath, Qt::UserRole);
-    groupItem->appendRow(fileItem);
+    groupManager->addToGroup(groupName, fileName, filePath);
 }
 
 void MainWindow::onTreeViewClicked(const QModelIndex &index) {
-    QString filePath = model->data(index, Qt::UserRole).toString();
-    QFile file(filePath);
-    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        QTextStream in(&file);
-        ui->textEditPrimary->setPlainText(in.readAll());
-        currentOpenFilePath = filePath; // Update the path of the currently opened file
-        file.close();
+    if (!index.isValid()) return;
+
+    QStandardItem *item = model->itemFromIndex(index);
+    if (!item) return;
+
+    // If parrent exists, that means that file is clicked, else group
+    if (item->parent()) {
+        QString filePath = item->data(Qt::UserRole + 1).toString();
+        QFile file(filePath);
+        if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            QTextStream in(&file);
+            ui->textEditPrimary->setPlainText(in.readAll());
+            file.close();
+        } else {
+            QMessageBox::warning(this, tr("Error"), tr("Cannot open file."));
+        }
     }
 }
 
@@ -362,6 +263,10 @@ void MainWindow::onCloseFileRequested(const QModelIndex &index) {
         ui->textEditPrimary->clear(); // Clear text view if there are no more items left or the opened file was closed
         currentOpenFilePath.clear();
     }
+}
+
+void MainWindow::displayError(const QString &error) {
+    QMessageBox::warning(this, tr("Error"), error);
 }
 
 void MainWindow::onCloseGroupRequested(const QModelIndex &groupIndex) {
@@ -460,35 +365,21 @@ void MainWindow::sortDescendingConfirmed() {
 }
 
 void MainWindow::promptForSortConfirmation(bool ascending) {
-    // Store everything from textEditSecondary for later Undo use.
-    previousContent = ui->textEditSecondary->toHtml();
+    previousContent = ui->textEditSecondary->toHtml();  // Store before sorting
     sortLogs(ascending);
 }
 
 void MainWindow::sortLogs(bool ascending) {
     QTextDocument *doc = ui->textEditSecondary->document();
-    QVector<QPair<QString, QString>> lineData; // HTML and plain text pairs
+    // Get sorted data from LogManager
+    QVector<QPair<QString, QString>> sortedData = logManager->sortLogs(doc, ascending);
 
-
-    for (QTextBlock block = doc->begin(); block.isValid(); block = block.next()) {
-        QTextCursor cursor(block);
-        cursor.select(QTextCursor::LineUnderCursor);
-        QString html = cursor.selection().toHtml();
-        QString plainText = block.text();
-        lineData.append(qMakePair(plainText, html));
-    }
-
-    // Sorting plain text, preserving HTML
-    std::sort(lineData.begin(), lineData.end(), [ascending](const QPair<QString, QString> &a, const QPair<QString, QString> &b) {
-        return ascending ? a.first < b.first : a.first > b.first;
-    });
-
-    // Rebuild new file with preserved HTML editings.
+    // Clear the existing content and insert the sorted data
     ui->textEditSecondary->clear();
     QTextCursor newCursor(ui->textEditSecondary->document());
-    for (const auto &data : lineData) {
-        newCursor.insertHtml(data.second); // Insert HTML
-        newCursor.insertBlock(); // Add line
+    for (const auto &data : sortedData) {
+        newCursor.insertHtml(data.second); // Insert HTML content
+        newCursor.insertBlock(); // Insert a new block for next line
     }
 }
 
@@ -626,4 +517,10 @@ void MainWindow::setLightTheme() {
     ui->textEditPrimary->setStyleSheet(styleSheet);
     ui->textEditSecondary->setStyleSheet(styleSheet);
     ui->treeView->setStyleSheet(styleSheet);
+}
+
+void MainWindow::setupGroupLogConnections() {
+    connect(logManager, &LogManager::errorOccurred, this, &MainWindow::displayError);
+    connect(logManager, &LogManager::fileAddedToGroup, this, &MainWindow::addToGroup);
+    connect(groupManager, &GroupManager::groupAdded, this, &MainWindow::addToGroup);
 }
