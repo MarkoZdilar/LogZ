@@ -104,16 +104,33 @@ QString LogManager::extractFileFromZip(const QString &zipFilePath, const QString
 
 QVector<QPair<QString, QString>> LogManager::sortLogs(QTextDocument* document, bool ascending) {
     QVector<QPair<QString, QString>> lineData; // HTML and plain text pairs
+    QRegularExpression regex("\\[(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2})\\]");
 
     for (QTextBlock block = document->begin(); block.isValid(); block = block.next()) {
         QTextCursor cursor(block);
         cursor.select(QTextCursor::LineUnderCursor);
         QString html = cursor.selection().toHtml();
         QString plainText = block.text();
-        lineData.append(qMakePair(plainText, html));
+        QRegularExpressionMatch match = regex.match(plainText);
+
+        if (match.hasMatch()) {
+            QString timestamp = match.captured(1);
+            lineData.append(qMakePair(timestamp, html));
+        } else {
+            lineData.append(qMakePair(QString(), html)); // Handle lines without timestamps
+        }
     }
 
     std::sort(lineData.begin(), lineData.end(), [ascending](const QPair<QString, QString>& a, const QPair<QString, QString>& b) {
+        if (a.first.isEmpty() && b.first.isEmpty()) {
+            return false; // Keep original order for lines without timestamps
+        }
+        if (a.first.isEmpty()) {
+            return !ascending; // Place lines without timestamps at the beginning or end
+        }
+        if (b.first.isEmpty()) {
+            return ascending; // Place lines without timestamps at the beginning or end
+        }
         return ascending ? a.first < b.first : a.first > b.first;
     });
 

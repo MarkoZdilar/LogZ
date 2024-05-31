@@ -192,7 +192,6 @@ QString MainWindow::promptForGroupName() {
     return "";
 }
 
-
 bool MainWindow::handleGrouping(const QString &fileName, const QString &filePath) {
     QStringList groups;
     for (int i = 0; i < model->rowCount(); ++i) {
