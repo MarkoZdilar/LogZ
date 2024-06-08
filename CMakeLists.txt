@@ -38,6 +38,8 @@ set(PROJECT_SOURCES
         View/src/zipviewerdialog.cpp
         View/inc/GroupManager.h
         View/src/GroupManager.cpp
+        View/inc/HelpDialog.h
+        View/src/HelpDialog.cpp
         Model/inc/FileExtractor.h
         Model/src/FileExtractor.cpp
         Model/inc/LogManager.h

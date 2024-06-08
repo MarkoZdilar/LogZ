@@ -2,6 +2,7 @@
 #include "./ui_mainwindow.h"
 #include "fileitemdelegate.h"
 #include "zipviewerdialog.h"
+#include "HelpDialog.h"
 #include <QFileDialog>
 #include <QFile>
 #include <QIODevice>
@@ -14,6 +15,7 @@
 #include <QTextDocument>
 #include <QTextBlock>
 #include <QTextCharFormat>
+#include <QActionGroup>
 #include <utility>
 #include <algorithm>
 #include <KArchive>
@@ -34,6 +36,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     initializeTreeView();
     initializeFonts();
+    initializeTranslations();
+    currentLanguage = "en";
     setupMenuBar();
     setupDelegatesAndConnections();
     setupTextFormattingActions();
@@ -121,6 +125,48 @@ void MainWindow::setupMenuBar() {
     sortMenu->addAction(sortDescendingAction);
     connect(sortAscendingAction, &QAction::triggered, [this]() { promptForSortConfirmation(true); });
     connect(sortDescendingAction, &QAction::triggered, [this]() { promptForSortConfirmation(false); });
+
+    // Help Menu
+    QMenu *helpMenu = menuBar->addMenu(tr("&Help"));
+    QAction *helpAction = new QAction(tr("&Help"), this);
+    helpMenu->addAction(helpAction);
+    connect(helpAction, &QAction::triggered, this, &MainWindow::showHelpDialog);
+
+    // Language Menu
+    QMenu *languageMenu = menuBar->addMenu(translations_en["language"]);
+    QActionGroup *languageActionGroup = new QActionGroup(this);
+
+    QAction *actionEnglish = new QAction(tr("&English"), this);
+    actionEnglish->setCheckable(true);
+    actionEnglish->setData("en");
+    languageMenu->addAction(actionEnglish);
+    languageActionGroup->addAction(actionEnglish);
+
+    QAction *actionCroatian = new QAction(tr("&Croatian"), this);
+    actionCroatian->setCheckable(true);
+    actionCroatian->setData("hr");
+    languageMenu->addAction(actionCroatian);
+    languageActionGroup->addAction(actionCroatian);
+
+    QAction *actionSpanish = new QAction(tr("&Spanish"), this);
+    actionSpanish->setCheckable(true);
+    actionSpanish->setData("es");
+    languageMenu->addAction(actionSpanish);
+    languageActionGroup->addAction(actionSpanish);
+
+    QAction *actionGerman = new QAction(tr("&German"), this);
+    actionGerman->setCheckable(true);
+    actionGerman->setData("de");
+    languageMenu->addAction(actionGerman);
+    languageActionGroup->addAction(actionGerman);
+
+    connect(languageActionGroup, &QActionGroup::triggered, [this](QAction *action) {
+        QString language = action->data().toString();
+        changeLanguage(language);
+    });
+
+    // Set default checked language
+    actionEnglish->setChecked(true);
 }
 
 // Setup delegates for custom drawing and connections for signals and slots
@@ -522,4 +568,214 @@ void MainWindow::setupGroupLogConnections() {
     connect(logManager, &LogManager::errorOccurred, this, &MainWindow::displayError);
     connect(logManager, &LogManager::fileAddedToGroup, this, &MainWindow::addToGroup);
     connect(groupManager, &GroupManager::groupAdded, this, &MainWindow::addToGroup);
+}
+
+void MainWindow::showHelpDialog() {
+    HelpDialog *helpDialog = new HelpDialog(this);
+    helpDialog->exec();
+}
+
+void MainWindow::initializeTranslations() {
+    translations_en = {
+        {"file", "File"},
+        {"open_logs", "Open Logs"},
+        {"open_editable_log", "Open Editable Log"},
+        {"save", "Save"},
+        {"undo", "Undo"},
+        {"view", "View"},
+        {"change_font_size", "Change Font Size"},
+        {"toggle_find_results", "Toggle Find Results"},
+        {"themes", "Themes"},
+        {"dark_theme", "Dark Theme"},
+        {"blue_theme", "Blue Theme"},
+        {"light_theme", "Light Theme"},
+        {"sort", "Sort"},
+        {"sort_ascending", "Sort Ascending"},
+        {"sort_descending", "Sort Descending"},
+        {"help", "Help"},
+        {"language", "Language"}
+    };
+    translations_hr = {
+        {"file", "Datoteka"},
+        {"open_logs", "Otvori log datoteke"},
+        {"open_editable_log", "Otvori log za uređivanje"},
+        {"save", "Spremi"},
+        {"undo", "Poništi"},
+        {"view", "Prikaz"},
+        {"change_font_size", "Promijeni veličinu fonta"},
+        {"toggle_find_results", "Promijeni sadržaj sporednog prozora"},
+        {"themes", "Teme"},
+        {"dark_theme", "Tamna tema"},
+        {"blue_theme", "Plava tema"},
+        {"light_theme", "Svijetla tema"},
+        {"sort", "Sortiraj"},
+        {"sort_ascending", "Sortiraj uzlazno"},
+        {"sort_descending", "Sortiraj silazno"},
+        {"help", "Pomoć"},
+        {"language", "Jezik"}
+    };
+    translations_es = {
+        {"file", "Archivo"},
+        {"open_logs", "Abrir registros"},
+        {"open_editable_log", "Abrir registro editable"},
+        {"save", "Guardar"},
+        {"undo", "Deshacer"},
+        {"view", "Vista"},
+        {"change_font_size", "Cambiar tamaño de fuente"},
+        {"toggle_find_results", "Alternar resultados de búsqueda"},
+        {"themes", "Temas"},
+        {"dark_theme", "Tema oscuro"},
+        {"blue_theme", "Tema azul"},
+        {"light_theme", "Tema claro"},
+        {"sort", "Ordenar"},
+        {"sort_ascending", "Orden ascendente"},
+        {"sort_descending", "Orden descendente"},
+        {"help", "Ayuda"},
+        {"language", "Idioma"}
+    };
+    translations_de = {
+        {"file", "Datei"},
+        {"open_logs", "Protokolle öffnen"},
+        {"open_editable_log", "Bearbeitbares Protokoll öffnen"},
+        {"save", "Speichern"},
+        {"undo", "Rückgängig machen"},
+        {"view", "Ansicht"},
+        {"change_font_size", "Schriftgröße ändern"},
+        {"toggle_find_results", "Suchergebnisse umschalten"},
+        {"themes", "Themen"},
+        {"dark_theme", "Dunkles Thema"},
+        {"blue_theme", "Blaues Thema"},
+        {"light_theme", "Helles Thema"},
+        {"sort", "Sortieren"},
+        {"sort_ascending", "Aufsteigend sortieren"},
+        {"sort_descending", "Absteigend sortieren"},
+        {"help", "Hilfe"},
+        {"language", "Sprache"}
+    };
+}
+
+void MainWindow::loadTranslations(const QString &language) {
+    if (language == "hr") {
+        ui->retranslateUi(this);
+    } else {
+        ui->retranslateUi(this);
+    }
+}
+void MainWindow::changeLanguage(const QString &language) {
+    currentLanguage = language;
+    retranslateUi();
+}
+
+void MainWindow::retranslateUi() {
+    QMenuBar *menuBar = this->menuBar();
+
+    QMap<QString, QString> translations;
+
+    if (currentLanguage == "hr") {
+        translations = translations_hr;
+    } else if (currentLanguage == "es") {
+        translations = translations_es;
+    } else if (currentLanguage == "de") {
+        translations = translations_de;
+    } else {
+        translations = translations_en;
+    }
+
+    // Update the menu bar
+    menuBar->clear();
+    QMenu *fileMenu = menuBar->addMenu(translations["file"]);
+    QAction *openLogsAction = new QAction(translations["open_logs"], this);
+    fileMenu->addAction(openLogsAction);
+    connect(openLogsAction, &QAction::triggered, this, &MainWindow::on_actionOpen_triggered);
+
+    QAction *openEditableLogAction = new QAction(translations["open_editable_log"], this);
+    fileMenu->addAction(openEditableLogAction);
+    connect(openEditableLogAction, &QAction::triggered, this, &MainWindow::on_openEditableLog_triggered);
+
+    QAction *saveAction = new QAction(translations["save"], this);
+    saveAction->setShortcut(QKeySequence::Save);
+    fileMenu->addAction(saveAction);
+    connect(saveAction, &QAction::triggered, this, &MainWindow::on_save_triggered);
+
+    QAction *undoAction = fileMenu->addAction(translations["undo"]);
+    connect(undoAction, &QAction::triggered, this, &MainWindow::undoChanges);
+
+    QMenu *viewMenu = menuBar->addMenu(translations["view"]);
+    QAction *changeFontSizeAction = new QAction(translations["change_font_size"], this);
+    viewMenu->addAction(changeFontSizeAction);
+    connect(changeFontSizeAction, &QAction::triggered, this, &MainWindow::onChangeFontSizeTriggered);
+
+    QAction *toggleViewAction = new QAction(translations["toggle_find_results"], this);
+    toggleViewAction->setCheckable(true);
+    connect(toggleViewAction, &QAction::toggled, this, &MainWindow::toggleFindResults);
+    viewMenu->addAction(toggleViewAction);
+
+    QMenu *themeMenu = viewMenu->addMenu(translations["themes"]);
+    QAction *darkThemeAction = new QAction(translations["dark_theme"], this);
+    QAction *blueThemeAction = new QAction(translations["blue_theme"], this);
+    QAction *lightThemeAction = new QAction(translations["light_theme"], this);
+
+    themeMenu->addAction(darkThemeAction);
+    themeMenu->addAction(blueThemeAction);
+    themeMenu->addAction(lightThemeAction);
+
+    connect(darkThemeAction, &QAction::triggered, this, &MainWindow::setDarkTheme);
+    connect(blueThemeAction, &QAction::triggered, this, &MainWindow::setBlueTheme);
+    connect(lightThemeAction, &QAction::triggered, this, &MainWindow::setLightTheme);
+
+    QMenu *sortMenu = menuBar->addMenu(translations["sort"]);
+    QAction *sortAscendingAction = new QAction(translations["sort_ascending"], this);
+    QAction *sortDescendingAction = new QAction(translations["sort_descending"], this);
+    sortMenu->addAction(sortAscendingAction);
+    sortMenu->addAction(sortDescendingAction);
+    connect(sortAscendingAction, &QAction::triggered, [this]() { promptForSortConfirmation(true); });
+    connect(sortDescendingAction, &QAction::triggered, [this]() { promptForSortConfirmation(false); });
+
+    QMenu *helpMenu = menuBar->addMenu(translations["help"]);
+    QAction *helpAction = new QAction(translations["help"], this);
+    helpMenu->addAction(helpAction);
+    connect(helpAction, &QAction::triggered, this, &MainWindow::showHelpDialog);
+
+    QMenu *languageMenu = menuBar->addMenu(translations["language"]);
+    QActionGroup *languageActionGroup = new QActionGroup(this);
+
+    QAction *actionEnglish = new QAction(tr("&English"), this);
+    actionEnglish->setCheckable(true);
+    actionEnglish->setData("en");
+    languageMenu->addAction(actionEnglish);
+    languageActionGroup->addAction(actionEnglish);
+
+    QAction *actionCroatian = new QAction(tr("&Croatian"), this);
+    actionCroatian->setCheckable(true);
+    actionCroatian->setData("hr");
+    languageMenu->addAction(actionCroatian);
+    languageActionGroup->addAction(actionCroatian);
+
+    QAction *actionSpanish = new QAction(tr("&Spanish"), this);
+    actionSpanish->setCheckable(true);
+    actionSpanish->setData("es");
+    languageMenu->addAction(actionSpanish);
+    languageActionGroup->addAction(actionSpanish);
+
+    QAction *actionGerman = new QAction(tr("&German"), this);
+    actionGerman->setCheckable(true);
+    actionGerman->setData("de");
+    languageMenu->addAction(actionGerman);
+    languageActionGroup->addAction(actionGerman);
+
+    connect(languageActionGroup, &QActionGroup::triggered, [this](QAction *action) {
+        QString language = action->data().toString();
+        changeLanguage(language);
+    });
+
+    // Set checked language
+    if (currentLanguage == "hr") {
+        actionCroatian->setChecked(true);
+    } else if (currentLanguage == "es") {
+        actionSpanish->setChecked(true);
+    } else if (currentLanguage == "de") {
+        actionGerman->setChecked(true);
+    } else {
+        actionEnglish->setChecked(true);
+    }
 }

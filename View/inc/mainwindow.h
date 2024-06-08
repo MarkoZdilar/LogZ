@@ -246,6 +246,22 @@ private slots:
      */
     void sortLogs(bool ascending);
 
+    /**
+     * @brief Displays the help dialog for the application.
+     *
+     * This function creates an instance of the HelpDialog class and executes it
+     * modally, displaying information about the application's usage and features.
+     * The dialog provides users with instructions and guidance on how to use the
+     * application effectively.
+     */
+    void showHelpDialog();
+
+    /**
+     * @brief Changes the language of the application.
+     * @param language The language code to switch to.
+     */
+    void changeLanguage(const QString &language);
+
 private:
     Ui::MainWindow *ui; ///< Pointer to the UI elements.
     QStandardItemModel *model; ///< Model for managing tree view items.
@@ -259,6 +275,11 @@ private:
     bool isFindResultsDisplayed = false; ///< Flag to indicate if the find results are currently displayed in the secondary text editor.
     LogManager* logManager; ///< Pointer to an instance of LogManager which handles the logic for managing log files.
     GroupManager* groupManager; ///< Pointer to an instance of GroupManager which manages group creation and color settings for the groups.
+    QString currentLanguage; ///< Holds the current language code.
+    QMap<QString, QString> translations_en; ///< Translations for English.
+    QMap<QString, QString> translations_hr; ///< Translations for Croatian.
+    QMap<QString, QString> translations_es; ///< Translations for Spanish.
+    QMap<QString, QString> translations_de; ///< Translations for German.
 
     /**
      * @brief Prompts the user to enter or select a group name.
@@ -391,6 +412,22 @@ private:
      * @param outputPath Directory where the decompressed content should be saved.
      */
     void processArchiveFile(const QString &filePath, const QString &outputPath);
+
+    /**
+     * @brief Loads translations for the given language.
+     * @param language The language code to load translations for.
+     */
+    void loadTranslations(const QString &language);
+
+    /**
+     * @brief Initializes the translations for all supported languages.
+     */
+    void initializeTranslations();
+
+    /**
+     * @brief Retranslates the UI to the current language.
+     */
+    void retranslateUi();
 };
 
 #endif // MAINWINDOW_H
