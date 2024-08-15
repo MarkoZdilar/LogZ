@@ -13,7 +13,7 @@ _LogZ is a versatile, cross-platform application designed to streamline the proc
 * Customizable user interface with adjustable layouts and themes.
 * Advanced file handling for individual or batch log file processing, including support for ZIP files.
 * Rich text editing with full control over font management and color settings.
-* Comprehensive search functionalities, including "Find Next," "Find Previous," and multi-language support.
+* Comprehensive search functionalities, including "Find All", "Find Next", "Find Previous" and functionalities like case sensitive search.
 * Multi-language interface with support for English, Croatian, Spanish, and German.
 
 ### Main Window
@@ -28,7 +28,7 @@ The **Main Window** of LogZ features a user-friendly interface that allows for e
 LogZ includes a **Font Management** window where users can easily customize the appearance of text within the logs. This feature allows changes to font size, style, and overall readability.
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/521aeb69-3dea-410c-99c7-e0ed85ec8716" width="80%" >
+  <img src="https://github.com/user-attachments/assets/521aeb69-3dea-410c-99c7-e0ed85ec8716" width="60%" >
 </p>
 <br>
 
@@ -36,7 +36,7 @@ LogZ includes a **Font Management** window where users can easily customize the 
 Through the **Color Selection** option, users can modify text and background colors to highlight critical information or make logs easier to read.
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/056ecba4-534a-4514-abfa-8a3333a2aeec" width="80%" >
+  <img src="https://github.com/user-attachments/assets/056ecba4-534a-4514-abfa-8a3333a2aeec" width="40%" >
 </p>
 <br>
 
@@ -44,7 +44,7 @@ Through the **Color Selection** option, users can modify text and background col
 The integrated **Help Page** provides detailed instructions and guidelines on how to utilize all of LogZ's features effectively. This page is also available in multiple languages.
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/74820df6-f41e-4ca4-9e7f-b6a0b8698163" width="80%" >
+  <img src="https://github.com/user-attachments/assets/74820df6-f41e-4ca4-9e7f-b6a0b8698163" width="70%" >
 </p>
 <br>
 
@@ -53,7 +53,7 @@ With LogZ's **Search Features**, users can efficiently locate specific entries w
 Search all results are displayed in a secondary window, providing a focused view that highlights all matches within the log. Secondary window content can be toggled anytime, so users can see their find results or they can continue editing their own log file.
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/76ea4ae9-698f-4950-acb2-06a87b40cb79" width="80%" >
+  <img src="https://github.com/user-attachments/assets/76ea4ae9-698f-4950-acb2-06a87b40cb79" width="30%" >
 </p>
 <br>
 
